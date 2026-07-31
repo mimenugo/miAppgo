@@ -13,6 +13,17 @@ export const seedProducts = [
 
 const initialState = {
   products: seedProducts,
+  cashRegister: {
+    open: true,
+    openedAt: new Date().toISOString(),
+    openingAmount: 1500,
+    openingOrderIds: [],
+    movements: [
+      { id: 1, type: 'Entrada', amount: 300, concept: 'Fondo adicional', createdAt: '10:15' },
+      { id: 2, type: 'Retiro', amount: 450, concept: 'Pago a proveedor', createdAt: '12:40' },
+    ],
+    cuts: [],
+  },
   customers: [
     { id: 1, name: 'Valeria Soto', phone: '33 1234 5678', address: 'Av. Reforma 214, Centro', orders: 6, total: 1840 },
     { id: 2, name: 'Marco Luna', phone: '33 7654 1122', address: 'Calle Olivo 88, Moderna', orders: 3, total: 920 },
@@ -29,7 +40,9 @@ export function useRestaurantStore() {
   const [data, setData] = useState(() => {
     try {
       const saved = localStorage.getItem(KEY)
-      return saved ? JSON.parse(saved) : initialState
+      if (!saved) return initialState
+      const parsed = JSON.parse(saved)
+      return { ...initialState, ...parsed, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
     } catch {
       return initialState
     }
@@ -64,5 +77,37 @@ export function useRestaurantStore() {
       : [...current.products, { ...product, id: Date.now(), tone: 'amber', active: true }],
   }))
 
-  return { ...data, createOrder, updateOrder, saveProduct }
+  const openCashRegister = openingAmount => setData(current => ({
+    ...current,
+    cashRegister: {
+      ...current.cashRegister,
+      open: true,
+      openedAt: new Date().toISOString(),
+      openingAmount: Number(openingAmount),
+      openingOrderIds: current.orders.map(order => order.id),
+      movements: [],
+    },
+  }))
+
+  const addCashMovement = movement => setData(current => ({
+    ...current,
+    cashRegister: {
+      ...current.cashRegister,
+      movements: [
+        { ...movement, id: Date.now(), amount: Number(movement.amount), createdAt: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) },
+        ...current.cashRegister.movements,
+      ],
+    },
+  }))
+
+  const closeCashRegister = cut => setData(current => ({
+    ...current,
+    cashRegister: {
+      ...current.cashRegister,
+      open: false,
+      cuts: [{ ...cut, id: Date.now(), closedAt: new Date().toLocaleString('es-MX') }, ...current.cashRegister.cuts],
+    },
+  }))
+
+  return { ...data, createOrder, updateOrder, saveProduct, openCashRegister, addCashMovement, closeCashRegister }
 }

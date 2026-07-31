@@ -4,6 +4,7 @@ import {
   Clock3, CookingPot, CreditCard, Edit3, LayoutDashboard, Map, MapPin,
   MessageCircle, Minus, PackageCheck, Phone, Plus, Search, ShieldCheck,
   ShoppingBag, Sparkles, Star, Store, Trash2, UserPlus, Users, Wallet, X,
+  History, LogIn, Navigation, ReceiptText,
 } from 'lucide-react'
 import { useRestaurantStore } from './store'
 
@@ -35,10 +36,11 @@ function notifyOrderByWhatsApp(order) {
 }
 
 const roles = {
-  cliente: { label: 'Cliente', icon: ShoppingBag, subtitle: 'Ordena algo delicioso' },
-  administrador: { label: 'Administrador', icon: LayoutDashboard, subtitle: 'Control del restaurante' },
-  produccion: { label: 'Producción', icon: ChefHat, subtitle: 'Cocina y comandas' },
-  repartidor: { label: 'Repartidor', icon: Bike, subtitle: 'Tus entregas de hoy' },
+  administrador: { label: 'Administrador Full', icon: LayoutDashboard, subtitle: 'Acceso completo al restaurante' },
+  cajero: { label: 'Cajero POS', icon: CircleDollarSign, subtitle: 'Ventas, caja y cortes' },
+  repartidor: { label: 'Repartidor Rutas', icon: Bike, subtitle: 'Entregas y navegación' },
+  produccion: { label: 'Cocina / Comandas', icon: ChefHat, subtitle: 'Producción de pedidos' },
+  cliente: { label: 'Cliente', icon: ShoppingBag, subtitle: 'Tienda pública para ordenar' },
 }
 
 function ProductMedia({ product, className = '' }) {
@@ -47,22 +49,24 @@ function ProductMedia({ product, className = '' }) {
     : <span className={className}>{product.emoji || '🍽️'}</span>
 }
 
-function RolePicker({ role, setRole }) {
-  const [open, setOpen] = useState(false)
+function RolePicker({ role, openSessions }) {
   const CurrentIcon = roles[role].icon
   return <div className="role-picker">
-    <button className="role-current" onClick={() => setOpen(!open)} aria-expanded={open}>
-      <span className="avatar"><CurrentIcon size={18}/></span><span><small>Vista actual</small><strong>{roles[role].label}</strong></span><ChevronRight size={17} className={open ? 'rotate' : ''}/>
+    <button className="role-current" onClick={openSessions}>
+      <span className="avatar"><CurrentIcon size={18}/></span><span><small>Sesión actual</small><strong>{roles[role].label}</strong></span><ChevronRight size={17}/>
     </button>
-    {open && <div className="role-menu"><p>Cambiar experiencia</p>{Object.entries(roles).map(([key,item]) => { const Icon=item.icon; return <button key={key} className={key===role?'selected':''} onClick={()=>{setRole(key);setOpen(false)}}><Icon size={18}/><span><strong>{item.label}</strong><small>{item.subtitle}</small></span>{key===role&&<Check size={16}/>}</button>})}</div>}
   </div>
 }
 
-function Header({ role, setRole, cartCount, onCart }) {
+function SessionSelector({ role, setRole, close }) {
+  return <div className="session-gate"><section className="session-window"><div className="session-brand"><span>🔥</span><div><small>GASTRO SUITE</small><h1>Seleccionar sesión</h1><p>Modo demostración: por ahora no se solicita contraseña.</p></div></div><div className="session-grid">{Object.entries(roles).map(([key,item])=>{const Icon=item.icon;return <button key={key} className={key===role?'selected':''} onClick={()=>{setRole(key);close()}}><span><Icon/></span><div><b>{item.label}</b><small>{item.subtitle}</small></div><ChevronRight/></button>})}</div>{role&&<button className="session-cancel" onClick={close}>Continuar en {roles[role].label}</button>}</section></div>
+}
+
+function Header({ role, openSessions, cartCount, onCart }) {
   return <header>
     <a className="brand" href="#inicio"><span className="brand-mark">🔥</span><span>FUEGO<small>restaurant + delivery</small></span></a>
     <nav><a href="#inicio">Inicio</a><a href="#menu">Menú</a><a href="#pedidos">Pedidos</a></nav>
-    <div className="header-actions"><RolePicker role={role} setRole={setRole}/>{role==='cliente'&&<button className="cart-button" onClick={onCart} aria-label="Abrir carrito"><ShoppingBag size={20}/><span>{cartCount}</span></button>}</div>
+    <div className="header-actions"><RolePicker role={role} openSessions={openSessions}/>{role==='cliente'&&<button className="cart-button" onClick={onCart} aria-label="Abrir carrito"><ShoppingBag size={20}/><span>{cartCount}</span></button>}</div>
   </header>
 }
 
@@ -105,9 +109,9 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder 
 
 function OrderTotal({subtotal,delivery,total,children}){return <div className="checkout"><p><span>Subtotal</span><b>{money(subtotal)}</b></p><p><span>Envío</span><b>{money(delivery)}</b></p><p className="total"><span>Total</span><b>{money(total)}</b></p>{children}</div>}
 
-const modules=[['Resumen',LayoutDashboard],['Pedidos',ShoppingBag],['Producción',CookingPot],['Reparto',Bike],['Productos',Store],['Clientes',Users],['Reportes',BarChart3]]
-function DashboardShell({active,setActive,children,onNewSale,title='Centro de operación',subtitle='Todo tu restaurante en un solo lugar.'}) {
-  return <main className="app-shell"><aside className="sidebar"><div className="side-brand">🔥</div>{modules.map(([label,Icon])=><button className={active===label?'active':''} key={label} onClick={()=>setActive(label)}><Icon/><span>{label}</span></button>)}</aside><div className="workspace"><div className="workspace-head"><div><span className="eyebrow">Panel de control</span><h1>{title}</h1><p>{subtitle}</p></div><button className="outline" onClick={onNewSale}><Plus/> Nueva venta</button></div>{children}</div></main>
+const modules=[['Resumen',LayoutDashboard],['Pedidos',ShoppingBag],['Caja',ReceiptText],['Producción',CookingPot],['Reparto',Bike],['Productos',Store],['Clientes',Users],['Reportes',BarChart3]]
+function DashboardShell({active,setActive,children,onNewSale,title='Centro de operación',subtitle='Todo tu restaurante en un solo lugar.',moduleItems=modules}) {
+  return <main className="app-shell"><aside className="sidebar"><div className="side-brand">🔥</div>{moduleItems.map(([label,Icon])=><button className={active===label?'active':''} key={label} onClick={()=>setActive(label)}><Icon/><span>{label}</span></button>)}</aside><div className="workspace"><div className="workspace-head"><div><span className="eyebrow">Panel de control</span><h1>{title}</h1><p>{subtitle}</p></div>{onNewSale&&<button className="outline" onClick={onNewSale}><Plus/> Nueva venta</button>}</div>{children}</div></main>
 }
 
 function AdminView({store, initialActive = 'Resumen'}) {
@@ -116,11 +120,23 @@ function AdminView({store, initialActive = 'Resumen'}) {
   return <DashboardShell active={active} setActive={setActive} onNewSale={()=>setSaleOpen(true)} title={active} subtitle="Información sincronizada con cocina y reparto.">
     {active==='Resumen'&&<Summary store={store}/>}
     {active==='Pedidos'&&<OrdersModule store={store}/>}
+    {active==='Caja'&&<CashControl store={store}/>}
     {active==='Producción'&&<ProductionBoard store={store}/>}
     {active==='Reparto'&&<DispatchModule store={store}/>}
     {active==='Productos'&&<ProductsModule store={store}/>}
     {active==='Clientes'&&<CustomersModule customers={store.customers}/>}
     {active==='Reportes'&&<ReportsModule store={store}/>}
+    {saleOpen&&<PointOfSale products={store.products} createOrder={store.createOrder} close={()=>setSaleOpen(false)}/>}
+  </DashboardShell>
+}
+
+function CashierView({store}) {
+  const [active,setActive]=useState('Caja')
+  const [saleOpen,setSaleOpen]=useState(false)
+  const cashierModules=[['Caja',ReceiptText],['Pedidos',ShoppingBag]]
+  return <DashboardShell active={active} setActive={setActive} moduleItems={cashierModules} onNewSale={()=>setSaleOpen(true)} title={active==='Caja'?'Control y arqueo de caja':'Pedidos de caja'} subtitle="Punto de venta y control del turno actual.">
+    {active==='Caja'&&<CashControl store={store}/>}
+    {active==='Pedidos'&&<OrdersModule store={store}/>}
     {saleOpen&&<PointOfSale products={store.products} createOrder={store.createOrder} close={()=>setSaleOpen(false)}/>}
   </DashboardShell>
 }
@@ -145,8 +161,30 @@ function ProductionBoard({store}) {
 }
 
 function DispatchModule({store}) {
-  const orders=store.orders.filter(o=>['Listo','Asignado','En ruta'].includes(o.status))
+  const orders=store.orders.filter(o=>['En cocina','Listo','Asignado','En ruta'].includes(o.status))
   return <section className="dash-card data-card"><div className="card-title"><div><small>Última milla</small><h2>Asignación de reparto</h2></div></div>{orders.length===0?<Empty text="No hay pedidos listos para reparto"/>:<div className="delivery-list">{orders.map(order=><article key={order.id}><div><span className="order-icon"><Bike/></span><div><b>#{order.id} · {order.customer}</b><small><MapPin/> {order.address}</small></div></div><div><select value={order.driver} onChange={e=>store.updateOrder(order.id,{driver:e.target.value,status:e.target.value?'Asignado':'Listo'})}><option value="">Sin asignar</option><option>Roberto Gómez</option><option>Luis Fernando Ruiz</option></select><span className={`status ${order.status.toLowerCase().replace(' ','-')}`}>{order.status}</span></div></article>)}</div>}</section>
+}
+
+function CashControl({store}) {
+  const [tab,setTab]=useState('Estado de caja')
+  const [movement,setMovement]=useState({type:'Entrada',amount:'',concept:''})
+  const [opening,setOpening]=useState(1500)
+  const [counted,setCounted]=useState('')
+  const [note,setNote]=useState('')
+  const cash=store.cashRegister
+  const cashSales=store.orders.filter(o=>o.payment==='Efectivo'&&o.status!=='Cancelado'&&!cash.openingOrderIds.includes(o.id)).reduce((sum,o)=>sum+o.total,0)
+  const inputs=cash.movements.filter(m=>m.type==='Entrada').reduce((sum,m)=>sum+m.amount,0)
+  const withdrawals=cash.movements.filter(m=>m.type==='Retiro').reduce((sum,m)=>sum+m.amount,0)
+  const expected=Number(cash.openingAmount)+cashSales+inputs-withdrawals
+  const addMovement=()=>{if(Number(movement.amount)>0&&movement.concept.trim()){store.addCashMovement(movement);setMovement({...movement,amount:'',concept:''})}}
+  const closeRegister=()=>{if(counted==='')return;store.closeCashRegister({openingAmount:cash.openingAmount,cashSales,inputs,withdrawals,expected,counted:Number(counted),difference:Number(counted)-expected,note});setCounted('');setNote('');setTab('Historial de cortes')}
+  const tabs=['Estado de caja','Entradas / retiros','Cierre de caja (Z)','Historial de cortes']
+  return <div className="cash-module"><div className="cash-tabs">{tabs.map(item=><button key={item} className={tab===item?'active':''} onClick={()=>setTab(item)}>{item}</button>)}</div>
+    {tab==='Estado de caja'&&<><section className={`cash-status ${cash.open?'open':'closed'}`}><div><span className="live-dot"/><small>{cash.open?'CAJA ABIERTA':'CAJA CERRADA'}</small><h2>{cash.open?'Turno en operación':'Inicia un nuevo turno'}</h2><p>{cash.open?`Apertura: ${new Date(cash.openedAt).toLocaleString('es-MX')}`:'Registra el fondo inicial para comenzar a vender.'}</p></div>{cash.open?<ReceiptText/>:<div className="cash-open-form"><input type="number" min="0" value={opening} onChange={e=>setOpening(e.target.value)}/><button className="primary" onClick={()=>store.openCashRegister(opening)}><LogIn/> Abrir caja</button></div>}</section>{cash.open&&<div className="cash-summary"><article><small>Fondo inicial</small><h3>{money(cash.openingAmount)}</h3></article><article><small>Ventas en efectivo</small><h3>{money(cashSales)}</h3></article><article><small>Entradas y retiros</small><h3>{money(inputs-withdrawals)}</h3></article><article className="expected"><small>Efectivo esperado</small><h3>{money(expected)}</h3></article></div>}<section className="dash-card cash-breakdown"><div className="card-title"><div><small>Resumen del turno</small><h2>Desglose de caja</h2></div></div><p><span>Fondo de apertura</span><b>{money(cash.openingAmount)}</b></p><p><span>Ventas en efectivo</span><b>{money(cashSales)}</b></p><p><span>Entradas</span><b className="positive">+ {money(inputs)}</b></p><p><span>Retiros</span><b className="negative">− {money(withdrawals)}</b></p><p className="cash-total"><span>Total esperado</span><b>{money(expected)}</b></p></section></>}
+    {tab==='Entradas / retiros'&&<div className="cash-two-columns"><section className="dash-card"><div className="card-title"><div><small>Nuevo movimiento</small><h2>Registrar entrada o retiro</h2></div></div><div className="cash-movement-form"><label>Tipo<select value={movement.type} onChange={e=>setMovement({...movement,type:e.target.value})}><option>Entrada</option><option>Retiro</option></select></label><label>Monto<input type="number" min="0" value={movement.amount} onChange={e=>setMovement({...movement,amount:e.target.value})} placeholder="0.00"/></label><label className="full">Concepto<input value={movement.concept} onChange={e=>setMovement({...movement,concept:e.target.value})} placeholder="Ej. pago a proveedor, fondo adicional"/></label><button className="primary full" disabled={!cash.open||!movement.concept||Number(movement.amount)<=0} onClick={addMovement}>Guardar movimiento</button></div></section><section className="dash-card"><div className="card-title"><div><small>Bitácora</small><h2>Movimientos del turno</h2></div></div><div className="movement-list">{cash.movements.length===0?<Empty text="Sin movimientos registrados"/>:cash.movements.map(item=><article key={item.id}><span className={item.type==='Entrada'?'in':'out'}>{item.type==='Entrada'?'+':'−'}</span><div><b>{item.concept}</b><small>{item.createdAt} · {item.type}</small></div><strong>{money(item.amount)}</strong></article>)}</div></section></div>}
+    {tab==='Cierre de caja (Z)'&&<section className="dash-card close-register"><div className="card-title"><div><small>Arqueo final</small><h2>Cierre de caja (Z)</h2></div><span className={`status ${cash.open?'en-ruta':'entregado'}`}>{cash.open?'Pendiente':'Cerrada'}</span></div>{cash.open?<><div className="close-grid"><div><small>Efectivo esperado</small><h2>{money(expected)}</h2><p>Incluye fondo, ventas y movimientos.</p></div><label>Efectivo contado<input type="number" min="0" value={counted} onChange={e=>setCounted(e.target.value)} placeholder="Captura el total físico"/></label><label className="full">Observaciones<input value={note} onChange={e=>setNote(e.target.value)} placeholder="Notas del cierre o aclaraciones"/></label></div>{counted!==''&&<div className={`difference ${Number(counted)-expected===0?'balanced':Number(counted)-expected>0?'positive':'negative'}`}><span>Diferencia de caja</span><b>{money(Number(counted)-expected)}</b></div>}<button className="primary" disabled={counted===''} onClick={closeRegister}>Confirmar cierre Z</button></>:<Empty text="La caja ya fue cerrada. Revisa el historial o abre un nuevo turno."/>}</section>}
+    {tab==='Historial de cortes'&&<section className="dash-card"><div className="card-title"><div><small>Cortes Z</small><h2>Historial de cierres</h2></div><b>{cash.cuts.length} cortes</b></div><div className="cuts-list">{cash.cuts.length===0?<Empty text="Todavía no hay cierres de caja"/>:cash.cuts.map(cut=><article key={cut.id}><span><History/></span><div><b>Corte #{String(cut.id).slice(-6)}</b><small>{cut.closedAt}{cut.note?` · ${cut.note}`:''}</small></div><div><small>Esperado</small><b>{money(cut.expected)}</b></div><div><small>Contado</small><b>{money(cut.counted)}</b></div><div><small>Diferencia</small><b className={cut.difference===0?'':cut.difference>0?'positive':'negative'}>{money(cut.difference)}</b></div></article>)}</div></section>}
+  </div>
 }
 
 function ProductsModule({store}) {
@@ -207,11 +245,22 @@ function PointOfSale({products,createOrder,close}) {
 function ProductionView({store}){return <AdminView store={store} initialActive="Producción"/>}
 
 function DriverView({store}) {
-  const assigned=store.orders.filter(o=>o.driver==='Roberto Gómez'&&['Asignado','En ruta'].includes(o.status))
-  const order=assigned[0]
-  if(!order)return <main className="driver-view"><div className="driver-top"><div><span className="eyebrow">Turno activo</span><h1>Hola, Roberto 👋</h1></div></div><Empty text="No tienes entregas asignadas por ahora."/></main>
-  const next=()=>store.updateOrder(order.id,{status:order.status==='Asignado'?'En ruta':'Entregado',paid:true})
-  return <main className="driver-view"><section className="driver-top"><div><span className="eyebrow">Turno activo · {assigned.length} entregas</span><h1>Hola, Roberto 👋</h1><p>Tu siguiente entrega está lista.</p></div><div className="driver-score"><Star fill="currentColor"/><b>4.96</b><small>Calificación</small></div></section><div className="driver-grid"><section className="map-card"><div className="map-ui"><div className="route-line"/><span className="pin restaurant"><Store/></span><span className="pin destination"><MapPin/></span><span className="rider">🛵</span><div className="map-label">12 min · 3.4 km</div></div></section><section className="delivery-card"><div className="delivery-head"><div><small>Siguiente entrega</small><h2>#{order.id}</h2></div><span className="status listo">{order.status}</span></div><div className="customer-block"><span>{order.customer.split(' ').map(x=>x[0]).join('').slice(0,2)}</span><div><h3>{order.customer}</h3><p><MapPin/> {order.address}</p></div></div><div className="delivery-actions"><a href={`tel:${order.phone}`}><Phone/> Llamar</a><a href={`sms:${order.phone}`}><MessageCircle/> Mensaje</a><a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.address)}`} target="_blank" rel="noreferrer"><Map/> Navegar</a></div><div className="package"><PackageCheck/><div><b>{lineText(order)}</b><small>{order.payment==='Efectivo'&&!order.paid?`Cobrar ${money(order.total)}`:'Pedido pagado · No cobrar'}</small></div><strong>{money(order.total)}</strong></div><button className="primary wide" onClick={next}>{order.status==='Asignado'?'Iniciar entrega':'Confirmar entrega'} <ArrowRight/></button></section></div></main>
+  const [tab,setTab]=useState('Por entregar')
+  const deliveryOrders=store.orders.filter(o=>o.driver==='Roberto Gómez'||o.status==='En cocina')
+  const activeOrders=deliveryOrders.filter(o=>['En cocina','Listo','Asignado','En ruta'].includes(o.status))
+  const history=deliveryOrders.filter(o=>o.status==='Entregado')
+  const positions=[['24%','24%'],['67%','19%'],['77%','61%'],['38%','70%'],['53%','43%']]
+  const advance=order=>{
+    if(order.status==='En cocina')return
+    const status=['Listo','Asignado'].includes(order.status)?'En ruta':'Entregado'
+    store.updateOrder(order.id,{status,driver:'Roberto Gómez',paid:status==='Entregado'?true:order.paid})
+  }
+  return <main className="driver-view driver-portal"><section className="driver-top"><div><span className="eyebrow">Servicio a domicilio · Turno activo</span><h1>Portal repartidor</h1><p>Hola, Roberto. Tienes {activeOrders.length} servicios por completar.</p></div><div className="driver-score"><Star fill="currentColor"/><b>4.96</b><small>Calificación</small></div></section>
+    <nav className="driver-nav">{[['Por entregar',PackageCheck],['Ruta en mapa',Navigation],['Historial',History]].map(([label,Icon])=><button key={label} className={tab===label?'active':''} onClick={()=>setTab(label)}><Icon/> {label}{label==='Por entregar'&&<span>{activeOrders.length}</span>}</button>)}</nav>
+    {tab==='Por entregar'&&<section className="delivery-queue"><div className="queue-heading"><div><small>DOMICILIO</small><h2>Lista de entregas</h2></div><div className="queue-counters"><span><i className="cooking"/> En cocina {activeOrders.filter(o=>o.status==='En cocina').length}</span><span><i className="route"/> En ruta {activeOrders.filter(o=>o.status==='En ruta').length}</span><span><i className="ready"/> Asignados {activeOrders.filter(o=>['Listo','Asignado'].includes(o.status)).length}</span></div></div>{activeOrders.length===0?<Empty text="No tienes entregas pendientes"/>:<div className="delivery-cards">{activeOrders.map((order,index)=><article key={order.id}><div className="delivery-card-head"><div><small>#{order.id}</small><h3>{order.customer}</h3></div><span className={`status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</span></div><div className="address-preview"><div className="mini-map"><span style={{left:positions[index%positions.length][0],top:positions[index%positions.length][1]}}><MapPin/></span></div><p><MapPin/> {order.address}</p></div><div className="delivery-meta"><span><PackageCheck/> {lineText(order)}</span><b>{money(order.total)}</b></div><div className="delivery-actions"><a href={`tel:${order.phone}`}><Phone/> Llamar</a><a href={`sms:${order.phone}`}><MessageCircle/> Contactar</a><a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.address)}`} target="_blank" rel="noreferrer"><Navigation/> Navegar</a></div>{order.status!=='En cocina'&&<button className="primary wide" onClick={()=>advance(order)}>{order.status==='En ruta'?'Confirmar entrega':'Iniciar ruta'} <ArrowRight/></button>}</article>)}</div>}</section>}
+    {tab==='Ruta en mapa'&&<section className="driver-route-layout"><div className="map-card route-map"><div className="map-ui"><div className="route-line"/><span className="pin restaurant"><Store/></span>{activeOrders.map((order,index)=><button className="delivery-pin" key={order.id} style={{left:positions[index%positions.length][0],top:positions[index%positions.length][1]}} title={order.address}><MapPin/><b>{index+1}</b><small>#{order.id}</small></button>)}<span className="rider">🛵</span><div className="map-label">{activeOrders.length} paradas · Ruta sugerida</div></div></div><aside className="route-stops"><small>ORDEN DE ENTREGA</small><h2>Paradas de la ruta</h2>{activeOrders.map((order,index)=><article key={order.id}><span>{index+1}</span><div><b>{order.customer}</b><small>{order.address}</small></div><strong className={`status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</strong></article>)}</aside></section>}
+    {tab==='Historial'&&<section className="dash-card driver-history"><div className="card-title"><div><small>Servicios completados</small><h2>Historial de entregas</h2></div><b>{history.length} entregas</b></div>{history.length===0?<Empty text="Todavía no hay entregas completadas"/>:history.map(order=><article key={order.id}><span><Check/></span><div><b>#{order.id} · {order.customer}</b><small><MapPin/> {order.address}</small></div><strong>{money(order.total)}</strong><span className="status entregado">Entregado</span></article>)}</section>}
+  </main>
 }
 
 function Modal({title,close,children,large}) {return <div className="overlay modal-overlay"><div className={`modal ${large?'large':''}`}><div className="panel-head"><h2>{title}</h2><button onClick={close}><X/></button></div>{children}</div></div>}
@@ -219,7 +268,8 @@ function Empty({text}){return <div className="empty compact-empty"><ShoppingBag/
 
 export default function App(){
   const store=useRestaurantStore()
-  const [role,setRoleState]=useState(()=>localStorage.getItem('fuego-active-role')||'cliente'),[cart,setCart]=useState([]),[showCart,setShowCart]=useState(false)
+  const savedRole=localStorage.getItem('fuego-active-role')
+  const [role,setRoleState]=useState(savedRole||'cliente'),[sessionOpen,setSessionOpen]=useState(!savedRole),[cart,setCart]=useState([]),[showCart,setShowCart]=useState(false)
   const setRole=nextRole=>{localStorage.setItem('fuego-active-role',nextRole);setRoleState(nextRole)}
   const cartCount=useMemo(()=>cart.reduce((n,row)=>n+row.qty,0),[cart])
   const addItem=product=>{setCart(rows=>rows.some(r=>r.id===product.id)?rows.map(r=>r.id===product.id?{...r,qty:r.qty+1}:r):[...rows,{...product,basePrice:product.price,qty:1,note:'',size:product.category==='Pizzas'?'Mediana':''}]);setShowCart(true)}
@@ -227,5 +277,5 @@ export default function App(){
   const updateNote=(id,note)=>setCart(rows=>rows.map(row=>row.id===id?{...row,note}:row))
   const updateSize=(id,size)=>setCart(rows=>rows.map(row=>row.id===id?{...row,size,price:pizzaPrice(row.basePrice||row.price,size)}:row))
   const createOrder=payload=>{const order=store.createOrder(payload);setCart([]);return order}
-  return <div className="app"><Header role={role} setRole={setRole} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
+  return <div className="app"><Header role={role} openSessions={()=>setSessionOpen(true)} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{sessionOpen&&<SessionSelector role={role} setRole={setRole} close={()=>setSessionOpen(false)}/>} {role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='cajero'&&<CashierView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
 }
