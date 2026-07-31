@@ -70,4 +70,4 @@ La conexión del backend debe operar en UTC (`SET time_zone = '+00:00'`). La zon
 
 ## Siguiente etapa
 
-Crear una API segura —por ejemplo Laravel 12, NestJS o Fastify— que consuma este esquema. La PWA debe dejar de leer `localStorage` solamente cuando los endpoints equivalentes estén terminados y probados. La migración recomendada es progresiva por módulos, empezando por autenticación, catálogo y pedidos.
+La API segura incluida en `server/` consume este esquema. La PWA consulta catálogo, clientes, pedidos, operación, caja y configuración mediante `/api`; `localStorage` se conserva únicamente para recordar el área visual elegida, nunca como almacenamiento de información operativa.

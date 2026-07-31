@@ -4,5 +4,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/miAppgo/',
-  server: { port: 4174 },
+  server: {
+    port: 4174,
+    proxy: {
+      '/api': 'http://localhost:3001',
+      '/uploads': 'http://localhost:3001',
+    },
+  },
 })

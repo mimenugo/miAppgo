@@ -1,6 +1,6 @@
 {
-  "name": "Fuego Restaurante & Delivery",
-  "short_name": "Fuego",
+  "name": "Gastro Suite · Pedidos y POS",
+  "short_name": "Gastro Suite",
   "description": "Pedidos, producción y entregas para restaurantes.",
   "start_url": "./",
   "scope": "./",

@@ -23,7 +23,7 @@ const isDeliveryOrder = order => order.serviceType === 'Domicilio'
 const WHATSAPP_TEST_NUMBER = '526645812107'
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]))
-const printAreaDocument = ({ title, printer, order, lines, type = 'area' }) => {
+const printAreaDocument = ({ title, printer, order, lines, type = 'area', brand = 'Gastro Suite' }) => {
   if (!lines.length) return false
   const frame = document.createElement('iframe')
   frame.setAttribute('aria-hidden', 'true')
@@ -33,7 +33,7 @@ const printAreaDocument = ({ title, printer, order, lines, type = 'area' }) => {
   const detail = type === 'sale'
     ? `<p class="total">TOTAL: ${escapeHtml(money(order.total))}</p><p>Pago: ${escapeHtml(order.payment)}</p>`
     : ''
-  frame.contentDocument.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>@page{size:80mm auto;margin:4mm}body{font:12px monospace;color:#111}h1,h2,p{text-align:center;margin:5px 0}small{display:block;text-align:center}article{display:grid;gap:4px;padding:9px 0;border-bottom:1px dashed #555}article strong{font-size:11px}.meta{border-block:1px dashed #555;padding:8px;margin:10px 0}.total{font-size:17px;font-weight:900;border-top:2px solid #111;padding-top:10px}</style></head><body><h1>🔥 FUEGO</h1><h2>${escapeHtml(title)}</h2><small>Impresora configurada: ${escapeHtml(printer)}</small><div class="meta"><b>#${escapeHtml(order.id)}</b><br>${escapeHtml(order.customer)} · ${escapeHtml(order.serviceType)}<br>${escapeHtml(order.scheduleLabel || 'Ahora')}</div>${products}${detail}</body></html>`)
+  frame.contentDocument.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>@page{size:80mm auto;margin:4mm}body{font:12px monospace;color:#111}h1,h2,p{text-align:center;margin:5px 0}small{display:block;text-align:center}article{display:grid;gap:4px;padding:9px 0;border-bottom:1px dashed #555}article strong{font-size:11px}.meta{border-block:1px dashed #555;padding:8px;margin:10px 0}.total{font-size:17px;font-weight:900;border-top:2px solid #111;padding-top:10px}</style></head><body><h1>${escapeHtml(brand)}</h1><h2>${escapeHtml(title)}</h2><small>Impresora configurada: ${escapeHtml(printer)}</small><div class="meta"><b>#${escapeHtml(order.id)}</b><br>${escapeHtml(order.customer)} · ${escapeHtml(order.serviceType)}<br>${escapeHtml(order.scheduleLabel || 'Ahora')}</div>${products}${detail}</body></html>`)
   frame.contentDocument.close()
   setTimeout(() => {
     frame.contentWindow.focus()
@@ -69,12 +69,12 @@ const updatePreparationArea = (store, order, area, next) => {
   })
 }
 
-function notifyOrderByWhatsApp(order) {
+function notifyOrderByWhatsApp(order, brandName = 'Gastro Suite') {
   const products = order.lines
     .map(line => `• ${line.qty} x ${line.name}${line.size ? ` (${line.size})` : ''}${line.note ? `\n  _Indicaciones: ${line.note}_` : ''} — ${money(line.price * line.qty)}`)
     .join('\n')
   const message = [
-    '🔥 *NUEVO PEDIDO FUEGO*',
+    `🔥 *NUEVO PEDIDO ${brandName.toUpperCase()}*`,
     `*Folio:* #${order.id}`,
     `*Cliente:* ${order.customer}`,
     order.phone && order.phone !== 'Mostrador' ? `*Teléfono:* ${order.phone}` : '',
@@ -114,19 +114,28 @@ function RolePicker({ role, openSessions }) {
   </div>
 }
 
-function SessionSelector({ role, setRole, close }) {
-  return <div className="session-gate"><section className="session-window"><div className="session-brand"><span>🔥</span><div><small>GASTRO SUITE</small><h1>Seleccionar sesión</h1><p>Modo demostración: por ahora no se solicita contraseña.</p></div></div><div className="session-grid">{Object.entries(roles).map(([key,item])=>{const Icon=item.icon;return <button key={key} className={key===role?'selected':''} onClick={()=>{setRole(key);close()}}><span><Icon/></span><div><b>{item.label}</b><small>{item.subtitle}</small></div><ChevronRight/></button>})}</div>{role&&<button className="session-cancel" onClick={close}>Continuar en {roles[role].label}</button>}</section></div>
+function SessionSelector({ role, setRole, close, store }) {
+  const accountByRole={administrador:'admin@gastrosuite.local',cajero:'caja@gastrosuite.local',produccion:'cocina@gastrosuite.local',barra:'barra@gastrosuite.local',repartidor:'repartidor@gastrosuite.local'}
+  const roleByApi={administrator:'administrador',cashier:'cajero',kitchen:'produccion',bar:'barra',driver:'repartidor'}
+  const [selected,setSelected]=useState(role==='cliente'?'':role)
+  const [email,setEmail]=useState(accountByRole[role]||'')
+  const [password,setPassword]=useState('')
+  const [message,setMessage]=useState('')
+  const [submitting,setSubmitting]=useState(false)
+  const choose=key=>{if(key==='cliente'){store.logout();setRole('cliente');close();return}setSelected(key);setEmail(accountByRole[key]||'');setPassword('');setMessage('')}
+  const signIn=async()=>{try{setSubmitting(true);setMessage('');const user=await store.login(email,password);const userRole=roleByApi[user.role];if(userRole!==selected){await store.logout();throw new Error('La cuenta no corresponde al área seleccionada.')}setRole(userRole);close()}catch(error){setMessage(error.message)}finally{setSubmitting(false)}}
+  return <div className="session-gate"><section className="session-window"><div className="session-brand"><span>🔥</span><div><small>{store.business.brandName}</small><h1>Acceso al sistema</h1><p>Selecciona el área e ingresa con una cuenta almacenada en la base de datos.</p></div></div><div className="session-grid">{Object.entries(roles).map(([key,item])=>{const Icon=item.icon;return <button key={key} className={key===selected?'selected':''} onClick={()=>choose(key)}><span><Icon/></span><div><b>{item.label}</b><small>{item.subtitle}</small></div><ChevronRight/></button>})}</div>{selected&&<div className="login-form"><label>Correo<input type="email" value={email} onChange={event=>setEmail(event.target.value)} autoComplete="username"/></label><label>Contraseña<input type="password" value={password} onChange={event=>setPassword(event.target.value)} autoComplete="current-password" onKeyDown={event=>event.key==='Enter'&&signIn()}/></label>{message&&<p>{message}</p>}<button className="primary wide" disabled={!email||!password||submitting} onClick={signIn}>{submitting?'Ingresando...':'Iniciar sesión'}</button></div>}{store.token&&<button className="session-cancel" onClick={close}>Continuar en {roles[role].label}</button>}</section></div>
 }
 
-function Header({ role, openSessions, cartCount, onCart }) {
+function Header({ role, openSessions, cartCount, onCart, business }) {
   return <header>
-    <a className="brand" href="#inicio"><span className="brand-mark">🔥</span><span>FUEGO<small>restaurant + delivery</small></span></a>
+    <a className="brand" href="#inicio">{business.logoUrl?<img className="brand-logo" src={business.logoUrl} alt={business.brandName}/>:<span className="brand-mark">🔥</span>}<span>{business.brandName}<small>{business.restaurantName}</small></span></a>
     <nav><a href="#inicio">Inicio</a><a href="#menu">Menú</a><a href="#pedidos">Pedidos</a></nav>
     <div className="header-actions"><RolePicker role={role} openSessions={openSessions}/>{role==='cliente'&&<button className="cart-button" onClick={onCart} aria-label="Abrir carrito"><ShoppingBag size={20}/><span>{cartCount}</span></button>}</div>
   </header>
 }
 
-function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSize, showCart, setShowCart, createOrder }) {
+function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSize, showCart, setShowCart, createOrder, business }) {
   const [category,setCategory]=useState('Todos')
   const [query,setQuery]=useState('')
   const deliveryProducts=products.filter(p=>p.active&&p.deliveryEnabled!==false)
@@ -140,18 +149,18 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSi
         <div className="product-grid">{visible.map(product=><article className="product-card" key={product.id}><div className={`product-image ${product.tone}`}><ProductMedia product={product}/><b><Star size={13} fill="currentColor"/> 4.9</b></div><div className="product-info"><small>{product.category}</small><h3>{product.name}</h3><p>{product.desc}</p><footer><strong>{money(product.price)}</strong><button onClick={()=>addItem(product)} aria-label={`Agregar ${product.name}`}><Plus size={19}/></button></footer></div></article>)}</div>
       </section>
     </main>
-    {showCart&&<Checkout cart={cart} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} close={()=>setShowCart(false)} createOrder={createOrder}/>}
+    {showCart&&<Checkout cart={cart} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} close={()=>setShowCart(false)} createOrder={createOrder} business={business}/>}
   </>
 }
 
-function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder }) {
+function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder, business }) {
   const [step,setStep]=useState('cart')
   const [payment,setPayment]=useState('Efectivo')
   const [form,setForm]=useState({customer:'',phone:'',address:'',reference:'',changeFor:''})
   const [result,setResult]=useState(null)
   const subtotal=cart.reduce((sum,row)=>sum+row.price*row.qty,0), delivery=39, total=subtotal+delivery
   const valid=form.customer.trim()&&form.phone.trim()&&form.address.trim()
-  const confirm=()=>{const order=createOrder({...form,serviceType:'Domicilio',lines:cart.map(({id,name,price,qty,note,size,station})=>({id,name,price,qty,note,size,station})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order);setResult(order);setStep('done')}
+  const confirm=async()=>{try{const order=await createOrder({...form,source:'pwa',serviceType:'Domicilio',lines:cart.map(({id,name,price,qty,note,size,station})=>({id,name,price,qty,note,size,station})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order,business.brandName);setResult(order);setStep('done')}catch(error){alert(error.message)}}
   return <div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><aside className="cart-panel">
     <div className="panel-head"><div><small>Pedido a domicilio</small><h2>{step==='cart'?'Tu bolsa':step==='checkout'?'Finalizar pedido':'¡Pedido confirmado!'}</h2></div><button onClick={close} aria-label="Cerrar"><X/></button></div>
     {step==='cart'&&<><div className="cart-list">{cart.length===0?<div className="empty"><ShoppingBag/><h3>Tu bolsa está vacía</h3></div>:cart.map(row=><div className="cart-row" key={row.id}><span className={`mini ${row.tone}`}>{row.emoji}</span><div><b>{row.name}</b><small>{money(row.price)}</small></div><div className="qty"><button onClick={()=>changeQty(row.id,-1)} aria-label={`Reducir ${row.name}`}><Minus size={14}/></button><span>{row.qty}</span><button onClick={()=>changeQty(row.id,1)} aria-label={`Aumentar ${row.name}`}><Plus size={14}/></button></div>{row.category==='Pizzas'&&<label className="item-size">Tamaño<select value={row.size||'Mediana'} onChange={e=>updateSize(row.id,e.target.value)}>{Object.keys(pizzaSizeAdjustments).map(size=><option key={size}>{size}</option>)}</select></label>}<label className="item-note">Indicaciones para cocina<input value={row.note||''} onChange={e=>updateNote(row.id,e.target.value)} placeholder="Ej. sin salsa, sin tomate, sin cebolla"/></label></div>)}</div>{cart.length>0&&<OrderTotal subtotal={subtotal} delivery={delivery} total={total}><button className="primary wide" onClick={()=>setStep('checkout')}>Continuar <ArrowRight size={18}/></button></OrderTotal>}</>}
@@ -166,7 +175,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder 
 
 function OrderTotal({subtotal,delivery,total,children}){return <div className="checkout"><p><span>Subtotal</span><b>{money(subtotal)}</b></p><p><span>Envío</span><b>{money(delivery)}</b></p><p className="total"><span>Total</span><b>{money(total)}</b></p>{children}</div>}
 
-const modules=[['Resumen',LayoutDashboard],['Pedidos',ShoppingBag],['Caja',ReceiptText],['Producción',CookingPot],['Barra',PackageCheck],['Reparto',Bike],['Productos',Store],['Clientes',Users],['Reportes',BarChart3]]
+const modules=[['Resumen',LayoutDashboard],['Pedidos',ShoppingBag],['Caja',ReceiptText],['Producción',CookingPot],['Barra',PackageCheck],['Reparto',Bike],['Productos',Store],['Clientes',Users],['Reportes',BarChart3],['Configuración',ShieldCheck]]
 function DashboardShell({active,setActive,children,onNewSale,title='Centro de operación',subtitle='Todo tu restaurante en un solo lugar.',moduleItems=modules}) {
   return <main className="app-shell"><aside className="sidebar"><div className="side-brand">🔥</div>{moduleItems.map(([label,Icon])=><button className={active===label?'active':''} key={label} onClick={()=>setActive(label)}><Icon/><span>{label}</span></button>)}</aside><div className="workspace"><div className="workspace-head"><div><span className="eyebrow">Panel de control</span><h1>{title}</h1><p>{subtitle}</p></div>{onNewSale&&<button className="outline" onClick={onNewSale}><Plus/> Nueva venta</button>}</div>{children}</div></main>
 }
@@ -184,6 +193,7 @@ function AdminView({store, initialActive = 'Resumen'}) {
     {active==='Productos'&&<ProductsModule store={store}/>}
     {active==='Clientes'&&<CustomersModule customers={store.customers}/>}
     {active==='Reportes'&&<ReportsModule store={store}/>}
+    {active==='Configuración'&&<BusinessSettings store={store}/>}
     {saleOpen&&<PointOfSale store={store} close={()=>setSaleOpen(false)}/>}
   </DashboardShell>
 }
@@ -271,7 +281,7 @@ function ProductsModule({store}) {
   const stationLabel=station=>station==='Barra'?'Barra / Listo para servir':station==='Ambas'?'Cocina y Barra':'Cocina'
   const empty={name:'',desc:'',price:'',category:'Tacos',station:'Cocina',deliveryEnabled:true,emoji:'🍽️',image:'',active:true}
   const [editing,setEditing]=useState(null)
-  const save=()=>{if(editing.name&&Number(editing.price)>0){store.saveProduct({...editing,price:Number(editing.price)});setEditing(null)}}
+  const save=async()=>{if(editing.name&&Number(editing.price)>0){try{await store.saveProduct({...editing,price:Number(editing.price)});setEditing(null)}catch(error){alert(error.message)}}}
   const loadImage=file=>{if(!file)return;if(file.size>1500000){alert('La imagen debe pesar menos de 1.5 MB.');return}const reader=new FileReader();reader.onload=()=>setEditing(current=>({...current,image:reader.result}));reader.readAsDataURL(file)}
   return <>
     <div className="module-toolbar"><p>{store.products.length} productos registrados</p><button className="primary" onClick={()=>setEditing(empty)}><Plus/> Nuevo producto</button></div>
@@ -287,6 +297,24 @@ function ProductsModule({store}) {
       <label className="full">Descripción<input value={editing.desc} onChange={e=>setEditing({...editing,desc:e.target.value})}/></label>
     </div><button className="primary wide modal-save" onClick={save}>Guardar producto</button></Modal>}
   </>
+}
+
+function BusinessSettings({store}) {
+  const [form,setForm]=useState(store.business)
+  const [saving,setSaving]=useState(false)
+  const [message,setMessage]=useState('')
+  useEffect(()=>setForm(store.business),[store.business])
+  const loadLogo=file=>{if(!file)return;if(file.size>1500000){setMessage('El logotipo debe pesar menos de 1.5 MB.');return}const reader=new FileReader();reader.onload=()=>setForm(current=>({...current,logo:reader.result,logoUrl:reader.result}));reader.readAsDataURL(file)}
+  const save=async()=>{try{setSaving(true);setMessage('');await store.saveBusiness(form);setMessage('Configuración guardada en la base de datos.')}catch(error){setMessage(error.message)}finally{setSaving(false)}}
+  return <div className="business-settings"><section className="dash-card"><div className="card-title"><div><small>CONFIGURACIÓN</small><h2>Sucursal o negocio</h2></div><span className="status pagado">MySQL</span></div><p className="settings-intro">Estos datos actualizan automáticamente encabezados, menú digital, panel administrativo, mensajes y tickets.</p><div className="business-form">
+    <label>Nombre de la marca<input value={form.brandName||''} onChange={event=>setForm({...form,brandName:event.target.value})}/></label>
+    <label>Nombre del restaurante<input value={form.restaurantName||''} onChange={event=>setForm({...form,restaurantName:event.target.value})}/></label>
+    <label>Nombre comercial de la sucursal<input value={form.branchName||''} onChange={event=>setForm({...form,branchName:event.target.value})}/></label>
+    <label>Teléfono<input value={form.phone||''} onChange={event=>setForm({...form,phone:event.target.value})}/></label>
+    <label className="full">Dirección<input value={form.address||''} onChange={event=>setForm({...form,address:event.target.value})}/></label>
+    <label className="full">Correo electrónico<input type="email" value={form.email||''} onChange={event=>setForm({...form,email:event.target.value})}/></label>
+    <label className="full business-logo-field">Logotipo<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event=>loadLogo(event.target.files?.[0])}/>{form.logoUrl&&<img src={form.logoUrl} alt="Logotipo actual"/>}</label>
+  </div>{message&&<p className="settings-message">{message}</p>}<button className="primary" disabled={saving||!form.brandName||!form.restaurantName||!form.branchName} onClick={save}>{saving?'Guardando...':'Guardar configuración'}</button></section></div>
 }
 
 function CustomersModule({customers}) {
@@ -375,11 +403,12 @@ function PointOfSale({store,close}) {
   const paymentReady=payment==='Efectivo'
     ? cashConfirmed&&Number(cashTendered)>=total
     : payment==='Transferencia / Depósito'&&transferValidated
-  const complete=()=>{
+  const complete=async()=>{
     if(submitting||!paymentReady)return
     setSubmitting(true)
     const scheduleLabel=timing==='Ahora'?'Ahora':`${scheduledDate} · ${scheduledTime}`
-    const order=store.createOrder({
+    try{const order=await store.createOrder({
+      source:'pos',
       customer:customerData.customer.trim(),
       phone:serviceType==='Domicilio'?customerData.phone.trim():'Mostrador',
       address:serviceType==='Domicilio'?customerData.address.trim():'',
@@ -401,21 +430,21 @@ function PointOfSale({store,close}) {
       scheduleLabel,
     })
     const drawerOpened=requestCashDrawer(order,settings)
-    if(settings.kitchenPrinterEnabled&&kitchenLines.length)printAreaDocument({title:'COMANDA DE COCINA',printer:settings.kitchenPrinter,order,lines:kitchenLines})
-    if(settings.barPrinterEnabled&&barLines.length)setTimeout(()=>printAreaDocument({title:'COMANDA DE BARRA',printer:settings.barPrinter,order,lines:barLines}),350)
-    setTimeout(()=>printAreaDocument({title:'TICKET DE VENTA',printer:settings.cashPrinter,order,lines,type:'sale'}),700)
-    store.updateOrder(order.id,{drawerOpened,drawerOpenedAt:drawerOpened?new Date().toISOString():'',printLog:{cash:true,kitchen:settings.kitchenPrinterEnabled&&kitchenLines.length>0,bar:settings.barPrinterEnabled&&barLines.length>0}})
-    notifyOrderByWhatsApp(order)
+    if(settings.kitchenPrinterEnabled&&kitchenLines.length)printAreaDocument({title:'COMANDA DE COCINA',printer:settings.kitchenPrinter,order,lines:kitchenLines,brand:store.business.brandName})
+    if(settings.barPrinterEnabled&&barLines.length)setTimeout(()=>printAreaDocument({title:'COMANDA DE BARRA',printer:settings.barPrinter,order,lines:barLines,brand:store.business.brandName}),350)
+    setTimeout(()=>printAreaDocument({title:'TICKET DE VENTA',printer:settings.cashPrinter,order,lines,type:'sale',brand:store.business.brandName}),700)
+    await store.updateOrder(order.id,{drawerOpened,drawerOpenedAt:drawerOpened?new Date().toISOString():'',printLog:{cash:true,kitchen:settings.kitchenPrinterEnabled&&kitchenLines.length>0,bar:settings.barPrinterEnabled&&barLines.length>0}})
+    notifyOrderByWhatsApp(order,store.business.brandName)
     setResult({...order,drawerOpened})
     setSubmitting(false)
-    setStep(5)
+    setStep(5)}catch(error){alert(error.message);setSubmitting(false)}
   }
   const steps=['Productos','Entrega y cliente','Revisar cuenta','Pago']
   return <Modal title={step===5?'Venta confirmada':'Nueva venta en caja'} close={close} large>
     {step<5&&<div className="pos-stepper">{steps.map((label,index)=><button key={label} className={step===index+1?'active':step>index+1?'done':''} onClick={()=>index+1<step&&setStep(index+1)}><span>{step>index+1?<Check/>:index+1}</span>{label}</button>)}</div>}
     {step===1&&<div className="pos-layout"><div><span className="eyebrow">Paso 1</span><h2>Captura los productos</h2><div className="pos-products">{products.filter(product=>product.active&&(serviceType!=='Domicilio'||product.deliveryEnabled!==false)).map(product=><button key={product.id} onClick={()=>add(product)}><ProductMedia product={product}/><b>{product.name}</b><small>{money(product.price)}</small><em className={`area-tag ${product.station==='Ambas'?'both':''}`}>{product.station==='Ambas'?'Cocina + Barra':product.station}</em>{product.deliveryEnabled===false&&<em>Solo recoger</em>}</button>)}</div></div><aside><h3>Detalle de venta</h3>{lines.length===0?<Empty text="Selecciona productos"/>:lines.map(line=><div className="pos-line-wrap" key={line.id}><div className="pos-line"><div className="pos-qty"><button type="button" onClick={()=>changeLineQty(line.id,-1)}><Minus/></button><span>{line.qty}</span><button type="button" onClick={()=>changeLineQty(line.id,1)}><Plus/></button></div><b>{line.name}</b><strong>{money(line.price*line.qty)}</strong></div>{line.category==='Pizzas'&&<label className="pos-size">Tamaño<select value={line.size} onChange={e=>updateLineSize(line.id,e.target.value)}>{Object.keys(pizzaSizeAdjustments).map(size=><option key={size}>{size}</option>)}</select></label>}<input value={line.note||''} onChange={e=>updateLineNote(line.id,e.target.value)} placeholder="Indicaciones: sin salsa, sin cebolla..."/></div>)}<div className="pos-total"><span>Subtotal</span><b>{money(subtotal)}</b></div><button className="primary wide" disabled={!lines.length} onClick={()=>setStep(2)}>Continuar a entrega y cliente <ArrowRight/></button></aside></div>}
     {step===2&&<div className="pos-form-step"><span className="eyebrow">Paso 2</span><h2>Tipo de entrega y datos del cliente</h2><p>Primero selecciona cómo se entregará el pedido.</p><div className="service-options"><button className={serviceType==='Recoger en restaurante'?'active':''} onClick={()=>changeServiceType('Recoger en restaurante')}><ShoppingBag/> 🏪 Recoger en restaurante</button><button className={serviceType==='Domicilio'?'active':''} onClick={()=>changeServiceType('Domicilio')}><Bike/> 🛵 Entrega a domicilio</button></div>{serviceType&&<div className="form-grid pos-customer-form"><label className="full">Nombre del cliente<input value={customerData.customer} onChange={e=>setCustomerData({...customerData,customer:e.target.value})} placeholder="Nombre completo"/></label>{serviceType==='Domicilio'&&<><label>Teléfono<input value={customerData.phone} onChange={e=>setCustomerData({...customerData,phone:e.target.value})}/></label><label>Costo de envío<input type="number" min="0" value={customerData.deliveryFee} onChange={e=>setCustomerData({...customerData,deliveryFee:e.target.value})}/></label><label className="full">Dirección completa<input value={customerData.address} onChange={e=>setCustomerData({...customerData,address:e.target.value})} placeholder="Calle, número, colonia, ciudad"/></label><label className="full">Referencias de ubicación<input value={customerData.reference} onChange={e=>setCustomerData({...customerData,reference:e.target.value})} placeholder="Entre calles, color del portón, indicaciones"/></label></>}</div>}<div className="schedule-card"><h3>¿Para cuándo?</h3><div className="service-options"><button className={timing==='Ahora'?'active':''} onClick={()=>setTiming('Ahora')}><Clock3/> Ahora</button><button className={timing==='Programar'?'active':''} onClick={()=>setTiming('Programar')}><History/> Programar</button></div>{timing==='Programar'&&<div className="schedule-fields"><label>Fecha<input type="date" min={today} value={scheduledDate} onChange={e=>setScheduledDate(e.target.value)}/></label><label>Selecciona horario<select value={scheduledTime} onChange={e=>setScheduledTime(e.target.value)} disabled={!scheduleSlots.length}>{scheduleSlots.map(slot=><option key={slot}>{slot}</option>)}</select></label>{!scheduleSlots.length&&<p className="no-slots">No hay horarios disponibles para la fecha seleccionada.</p>}</div>}</div><div className="pos-form-actions"><button className="outline" onClick={()=>setStep(1)}>Volver</button><button className="primary" disabled={!serviceType||!customerReady||!scheduleReady} onClick={()=>setStep(3)}>Revisar cuenta <ArrowRight/></button></div></div>}
-    {step===3&&<div className="sale-review"><section className="kitchen-print"><div className="ticket-logo">🔥 FUEGO</div><h2>RESUMEN DE LA ORDEN</h2><p className="ticket-meta">Todavía no se ha impreso ni enviado ninguna comanda</p><div className="ticket-customer"><small>CLIENTE</small><b>{customerData.customer}</b></div><div className="ticket-delivery"><b>{serviceType}</b><span>{serviceType==='Domicilio'?`${customerData.phone} · ${customerData.address}`:'Recoge en sucursal'}</span><span>{timing==='Ahora'?'Ahora':`${scheduledDate} · ${scheduledTime}`}</span></div><div className="ticket-lines">{lines.map(line=><article key={line.id}><b>{line.qty}× {line.name}{line.size?` · ${line.size}`:''}</b><span>{money(line.price*line.qty)}</span>{line.note&&<strong>INDICACIÓN: {line.note}</strong>}</article>)}</div><footer><span>Envío: {money(delivery)}</span><b>Total: {money(total)}</b></footer></section><aside className="review-actions"><span className="eyebrow">Paso 3</span><h2>Revisa la cuenta</h2><ol><li className="done"><Check/> {lines.reduce((sum,line)=>sum+line.qty,0)} productos capturados</li><li className="done"><Check/> {serviceType}</li><li className="done"><Check/> Cliente: {customerData.customer}</li><li><Printer/> La impresión ocurrirá después del cobro</li></ol><button className="primary wide" onClick={()=>setStep(4)}>Continuar al pago <ArrowRight/></button><button className="review-back" onClick={()=>setStep(2)}>Corregir datos</button></aside></div>}
+    {step===3&&<div className="sale-review"><section className="kitchen-print"><div className="ticket-logo">🔥 {store.business.brandName}</div><h2>RESUMEN DE LA ORDEN</h2><p className="ticket-meta">Todavía no se ha impreso ni enviado ninguna comanda</p><div className="ticket-customer"><small>CLIENTE</small><b>{customerData.customer}</b></div><div className="ticket-delivery"><b>{serviceType}</b><span>{serviceType==='Domicilio'?`${customerData.phone} · ${customerData.address}`:'Recoge en sucursal'}</span><span>{timing==='Ahora'?'Ahora':`${scheduledDate} · ${scheduledTime}`}</span></div><div className="ticket-lines">{lines.map(line=><article key={line.id}><b>{line.qty}× {line.name}{line.size?` · ${line.size}`:''}</b><span>{money(line.price*line.qty)}</span>{line.note&&<strong>INDICACIÓN: {line.note}</strong>}</article>)}</div><footer><span>Envío: {money(delivery)}</span><b>Total: {money(total)}</b></footer></section><aside className="review-actions"><span className="eyebrow">Paso 3</span><h2>Revisa la cuenta</h2><ol><li className="done"><Check/> {lines.reduce((sum,line)=>sum+line.qty,0)} productos capturados</li><li className="done"><Check/> {serviceType}</li><li className="done"><Check/> Cliente: {customerData.customer}</li><li><Printer/> La impresión ocurrirá después del cobro</li></ol><button className="primary wide" onClick={()=>setStep(4)}>Continuar al pago <ArrowRight/></button><button className="review-back" onClick={()=>setStep(2)}>Corregir datos</button></aside></div>}
     {step===4&&<div className="payment-step"><section><span className="eyebrow">Paso 4</span><h2>Confirmar pago</h2><div className="payment-total"><small>Total</small><strong>{money(total)}</strong></div><div className="payment-summary"><p><b>Tipo de entrega:</b> {serviceType==='Domicilio'?'🛵 Entrega a domicilio':'🏪 Recoger en restaurante'}</p><p><b>¿Para cuándo?</b> {timing==='Ahora'?'Ahora':`${scheduledDate} · ${scheduledTime}`}</p></div><h3>Método de pago</h3><div className="payment-options"><button className={payment==='Transferencia / Depósito'?'active':''} onClick={()=>{setPayment('Transferencia / Depósito');setCashConfirmed(false)}}><CreditCard/><span><b>💳 Transferencia / Depósito</b><small>Requiere validación</small></span>{payment==='Transferencia / Depósito'&&<Check/>}</button><button className={payment==='Efectivo'?'active':''} onClick={()=>{setPayment('Efectivo');setTransferValidated(false)}}><Wallet/><span><b>🤝 Efectivo</b><small>Cobro en caja</small></span>{payment==='Efectivo'&&<Check/>}</button></div>{payment==='Transferencia / Depósito'&&<div className="transfer-panel"><div><small>Titular</small><b>{settings.accountHolder}</b></div><div><small>Banco</small><b>{settings.bank}</b></div><div><small>Cuenta</small><b>{settings.accountNumber||'No configurada'}</b></div><div><small>CLABE</small><b>{settings.clabe||'No configurada'}</b></div>{settings.cardNumber&&<div><small>Tarjeta</small><b>{settings.cardNumber}</b></div>}{settings.paymentQr&&<img src={settings.paymentQr} alt="Código QR de pago"/>}<label className="full">Comprobante (opcional)<input type="file" accept="image/*,.pdf" onChange={e=>setProof(e.target.files?.[0]?.name||'')}/>{proof&&<small>Registrado: {proof}</small>}</label><div className="payment-validation"><span className={`status ${transferValidated?'entregado':'nuevo'}`}>{transferValidated?'Pagado':'Pendiente de validar'}</span><label className="inline-check"><input type="checkbox" checked={transferValidated} onChange={e=>setTransferValidated(e.target.checked)}/> Confirmo que el negocio validó la transferencia</label></div></div>}{payment==='Efectivo'&&<div className="cash-payment-panel"><label>Monto con el que paga<input type="number" min={total} value={cashTendered} onChange={e=>{setCashTendered(e.target.value);setCashConfirmed(false)}} placeholder={String(total)}/></label><div><small>Cambio a entregar</small><b>{money(cashChange)}</b></div><label className="inline-check"><input type="checkbox" checked={cashConfirmed} disabled={Number(cashTendered)<total} onChange={e=>setCashConfirmed(e.target.checked)}/> Confirmo que recibí el efectivo</label>{settings.cashDrawerEnabled&&!settings.cashDrawerCompatible&&<p className="drawer-warning">El cajón no se abrirá físicamente hasta marcarlo como compatible en Configuración POS.</p>}</div>}</section><aside className="payment-final"><h3>Al confirmar</h3><ol><li><CircleDollarSign/> Se registra la venta como Pagada</li><li><Wallet/> El cajón abre solo si el pago es efectivo</li><li><ChefHat/> Se envía la comanda de cocina</li><li><PackageCheck/> Se envía la comanda de barra</li><li><Printer/> Se imprime el ticket completo en caja</li></ol><button className="primary wide" disabled={!paymentReady||submitting} onClick={complete}>{submitting?'Procesando...':'Confirmar cobro y enviar pedido'} <ArrowRight/></button><button className="review-back" onClick={()=>setStep(3)}>Volver a revisar</button></aside></div>}
     {step===5&&result&&<div className="pos-success"><span><Check/></span><h2>Venta #{result.id} confirmada</h2><p>El pedido quedó <b>Pagado</b> y fue enviado a las áreas correspondientes.</p><div className="print-results"><article><Printer/><b>Ticket de caja</b><small>Enviado a {settings.cashPrinter}</small></article>{kitchenLines.length>0&&<article><ChefHat/><b>Comanda de cocina</b><small>{settings.kitchenPrinterEnabled?`Enviada a ${settings.kitchenPrinter}`:'Impresora desactivada'}</small></article>}{barLines.length>0&&<article><PackageCheck/><b>Comanda de barra</b><small>{settings.barPrinterEnabled?`Enviada a ${settings.barPrinter}`:'Impresora desactivada'}</small></article>}<article><Wallet/><b>Cajón de dinero</b><small>{payment!=='Efectivo'?'No aplica':result.drawerOpened?'Apertura solicitada':'Sin apertura física'}</small></article></div><button className="primary" onClick={close}>Finalizar</button></div>}
   </Modal>
@@ -517,13 +546,16 @@ function Empty({text}){return <div className="empty compact-empty"><ShoppingBag/
 export default function App(){
   const store=useRestaurantStore()
   const savedRole=localStorage.getItem('fuego-active-role')
-  const [role,setRoleState]=useState(savedRole||'cliente'),[sessionOpen,setSessionOpen]=useState(!savedRole),[cart,setCart]=useState([]),[showCart,setShowCart]=useState(false)
+  const [role,setRoleState]=useState(savedRole||'cliente'),[sessionOpen,setSessionOpen]=useState(!savedRole||(savedRole!=='cliente'&&!store.token)),[cart,setCart]=useState([]),[showCart,setShowCart]=useState(false)
   const setRole=nextRole=>{localStorage.setItem('fuego-active-role',nextRole);setRoleState(nextRole)}
+  useEffect(()=>{document.title=`${store.business.brandName} · Pedidos y POS`},[store.business.brandName])
+  useEffect(()=>{if(role!=='cliente'&&!store.token)setSessionOpen(true)},[role,store.token])
   const cartCount=useMemo(()=>cart.reduce((n,row)=>n+row.qty,0),[cart])
   const addItem=product=>{setCart(rows=>rows.some(r=>r.id===product.id)?rows.map(r=>r.id===product.id?{...r,qty:r.qty+1}:r):[...rows,{...product,basePrice:product.price,qty:1,note:'',size:product.category==='Pizzas'?'Mediana':''}]);setShowCart(true)}
   const changeQty=(id,delta)=>setCart(rows=>rows.flatMap(row=>row.id!==id?[row]:row.qty+delta>0?[{...row,qty:row.qty+delta}]:[]))
   const updateNote=(id,note)=>setCart(rows=>rows.map(row=>row.id===id?{...row,note}:row))
   const updateSize=(id,size)=>setCart(rows=>rows.map(row=>row.id===id?{...row,size,price:pizzaPrice(row.basePrice||row.price,size)}:row))
-  const createOrder=payload=>{const order=store.createOrder(payload);setCart([]);return order}
-  return <div className="app"><Header role={role} openSessions={()=>setSessionOpen(true)} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{sessionOpen&&<SessionSelector role={role} setRole={setRole} close={()=>setSessionOpen(false)}/>} {role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='cajero'&&<CashierView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='barra'&&<BarView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
+  const createOrder=async payload=>{const order=await store.createOrder(payload);setCart([]);return order}
+  if(store.loading)return <div className="app-state"><span>🔥</span><h1>Preparando {store.business.brandName}</h1><p>Conectando con la base de datos…</p></div>
+  return <div className="app"><Header role={role} openSessions={()=>setSessionOpen(true)} cartCount={cartCount} onCart={()=>setShowCart(true)} business={store.business}/>{store.error&&<div className="api-warning">No fue posible actualizar los datos: {store.error}</div>}{sessionOpen&&<SessionSelector role={role} setRole={setRole} close={()=>setSessionOpen(false)} store={store}/>} {role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder} business={store.business}/>} {role==='administrador'&&store.token&&<AdminView store={store}/>} {role==='cajero'&&store.token&&<CashierView store={store}/>} {role==='produccion'&&store.token&&<ProductionView store={store}/>} {role==='barra'&&store.token&&<BarView store={store}/>} {role==='repartidor'&&store.token&&<DriverView store={store}/>}</div>
 }
