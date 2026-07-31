@@ -8,12 +8,12 @@ import {
 import { useRestaurantStore } from './store'
 
 const money = value => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
-const lineText = order => order.lines.map(line => `${line.qty} ${line.name}`).join(' · ')
+const lineText = order => order.lines.map(line => `${line.qty} ${line.name}${line.note ? ` (${line.note})` : ''}`).join(' · ')
 const WHATSAPP_TEST_NUMBER = '526645812107'
 
 function notifyOrderByWhatsApp(order) {
   const products = order.lines
-    .map(line => `• ${line.qty} x ${line.name} — ${money(line.price * line.qty)}`)
+    .map(line => `• ${line.qty} x ${line.name}${line.note ? `\n  _Indicaciones: ${line.note}_` : ''} — ${money(line.price * line.qty)}`)
     .join('\n')
   const message = [
     '🔥 *NUEVO PEDIDO FUEGO*',
@@ -64,7 +64,7 @@ function Header({ role, setRole, cartCount, onCart }) {
   </header>
 }
 
-function CustomerView({ products, cart, addItem, changeQty, showCart, setShowCart, createOrder }) {
+function CustomerView({ products, cart, addItem, changeQty, updateNote, showCart, setShowCart, createOrder }) {
   const [category,setCategory]=useState('Todos')
   const [query,setQuery]=useState('')
   const categories=['Todos',...new Set(products.filter(p=>p.active).map(p=>p.category))]
@@ -77,21 +77,21 @@ function CustomerView({ products, cart, addItem, changeQty, showCart, setShowCar
         <div className="product-grid">{visible.map(product=><article className="product-card" key={product.id}><div className={`product-image ${product.tone}`}><ProductMedia product={product}/><b><Star size={13} fill="currentColor"/> 4.9</b></div><div className="product-info"><small>{product.category}</small><h3>{product.name}</h3><p>{product.desc}</p><footer><strong>{money(product.price)}</strong><button onClick={()=>addItem(product)} aria-label={`Agregar ${product.name}`}><Plus size={19}/></button></footer></div></article>)}</div>
       </section>
     </main>
-    {showCart&&<Checkout cart={cart} changeQty={changeQty} close={()=>setShowCart(false)} createOrder={createOrder}/>}
+    {showCart&&<Checkout cart={cart} changeQty={changeQty} updateNote={updateNote} close={()=>setShowCart(false)} createOrder={createOrder}/>}
   </>
 }
 
-function Checkout({ cart, changeQty, close, createOrder }) {
+function Checkout({ cart, changeQty, updateNote, close, createOrder }) {
   const [step,setStep]=useState('cart')
   const [payment,setPayment]=useState('Efectivo')
   const [form,setForm]=useState({customer:'',phone:'',address:'',reference:'',changeFor:''})
   const [result,setResult]=useState(null)
   const subtotal=cart.reduce((sum,row)=>sum+row.price*row.qty,0), delivery=39, total=subtotal+delivery
   const valid=form.customer.trim()&&form.phone.trim()&&form.address.trim()
-  const confirm=()=>{const order=createOrder({...form,lines:cart.map(({id,name,price,qty})=>({id,name,price,qty})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order);setResult(order);setStep('done')}
+  const confirm=()=>{const order=createOrder({...form,lines:cart.map(({id,name,price,qty,note})=>({id,name,price,qty,note})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order);setResult(order);setStep('done')}
   return <div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><aside className="cart-panel">
     <div className="panel-head"><div><small>Pedido a domicilio</small><h2>{step==='cart'?'Tu bolsa':step==='checkout'?'Finalizar pedido':'¡Pedido confirmado!'}</h2></div><button onClick={close} aria-label="Cerrar"><X/></button></div>
-    {step==='cart'&&<><div className="cart-list">{cart.length===0?<div className="empty"><ShoppingBag/><h3>Tu bolsa está vacía</h3></div>:cart.map(row=><div className="cart-row" key={row.id}><span className={`mini ${row.tone}`}>{row.emoji}</span><div><b>{row.name}</b><small>{money(row.price)}</small></div><div className="qty"><button onClick={()=>changeQty(row.id,-1)}><Minus size={14}/></button><span>{row.qty}</span><button onClick={()=>changeQty(row.id,1)}><Plus size={14}/></button></div></div>)}</div>{cart.length>0&&<OrderTotal subtotal={subtotal} delivery={delivery} total={total}><button className="primary wide" onClick={()=>setStep('checkout')}>Continuar <ArrowRight size={18}/></button></OrderTotal>}</>}
+    {step==='cart'&&<><div className="cart-list">{cart.length===0?<div className="empty"><ShoppingBag/><h3>Tu bolsa está vacía</h3></div>:cart.map(row=><div className="cart-row" key={row.id}><span className={`mini ${row.tone}`}>{row.emoji}</span><div><b>{row.name}</b><small>{money(row.price)}</small></div><div className="qty"><button onClick={()=>changeQty(row.id,-1)}><Minus size={14}/></button><span>{row.qty}</span><button onClick={()=>changeQty(row.id,1)}><Plus size={14}/></button></div><label className="item-note">Indicaciones para cocina<input value={row.note||''} onChange={e=>updateNote(row.id,e.target.value)} placeholder="Ej. sin salsa, sin tomate, sin cebolla"/></label></div>)}</div>{cart.length>0&&<OrderTotal subtotal={subtotal} delivery={delivery} total={total}><button className="primary wide" onClick={()=>setStep('checkout')}>Continuar <ArrowRight size={18}/></button></OrderTotal>}</>}
     {step==='checkout'&&<div className="checkout-form"><div className="step-title"><span>1</span><h3>Datos de entrega</h3></div><div className="form-grid"><label>Nombre completo<input value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})} placeholder="¿Quién recibe?"/></label><label>Teléfono<input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="33 1234 5678"/></label><label className="full">Dirección<input value={form.address} onChange={e=>setForm({...form,address:e.target.value})} placeholder="Calle, número, colonia"/></label><label className="full">Referencia<input value={form.reference} onChange={e=>setForm({...form,reference:e.target.value})} placeholder="Portón, entre calles, indicaciones"/></label></div>
       <div className="step-title"><span>2</span><h3>Método de pago</h3></div><div className="payment-options"><button className={payment==='Efectivo'?'active':''} onClick={()=>setPayment('Efectivo')}><Wallet/><span><b>Efectivo</b><small>Paga al recibir</small></span>{payment==='Efectivo'&&<Check/>}</button><button className={payment==='Tarjeta'?'active':''} onClick={()=>setPayment('Tarjeta')}><CreditCard/><span><b>Tarjeta</b><small>Pago seguro</small></span>{payment==='Tarjeta'&&<Check/>}</button></div>
       {payment==='Efectivo'&&<label className="change-field">¿Con cuánto pagarás?<input type="number" value={form.changeFor} onChange={e=>setForm({...form,changeFor:e.target.value})} placeholder={`Mínimo ${total}`}/></label>}
@@ -192,10 +192,11 @@ function ReportsModule({store}) {
 
 function PointOfSale({products,createOrder,close}) {
   const [lines,setLines]=useState([]),[payment,setPayment]=useState('Efectivo'),[customer,setCustomer]=useState('Venta mostrador')
-  const add=p=>setLines(rows=>rows.some(r=>r.id===p.id)?rows.map(r=>r.id===p.id?{...r,qty:r.qty+1}:r):[...rows,{...p,qty:1}])
+  const add=p=>setLines(rows=>rows.some(r=>r.id===p.id)?rows.map(r=>r.id===p.id?{...r,qty:r.qty+1}:r):[...rows,{...p,qty:1,note:''}])
+  const updateLineNote=(id,note)=>setLines(rows=>rows.map(line=>line.id===id?{...line,note}:line))
   const subtotal=lines.reduce((s,r)=>s+r.price*r.qty,0)
-  const complete=()=>{const order=createOrder({customer,phone:'Mostrador',address:'Recoge en sucursal',lines:lines.map(({id,name,price,qty})=>({id,name,price,qty})),subtotal,delivery:0,total:subtotal,payment,paid:true,status:'Nuevo'});notifyOrderByWhatsApp(order);close()}
-  return <Modal title="Nueva venta en caja" close={close} large><div className="pos-layout"><div><label className="field-label">Cliente<input value={customer} onChange={e=>setCustomer(e.target.value)}/></label><div className="pos-products">{products.filter(p=>p.active).map(p=><button key={p.id} onClick={()=>add(p)}><ProductMedia product={p}/><b>{p.name}</b><small>{money(p.price)}</small></button>)}</div></div><aside><h3>Detalle de venta</h3>{lines.length===0?<Empty text="Selecciona productos"/>:lines.map(line=><div className="pos-line" key={line.id}><span>{line.qty}×</span><b>{line.name}</b><strong>{money(line.price*line.qty)}</strong></div>)}<div className="pos-total"><span>Total</span><b>{money(subtotal)}</b></div><div className="payment-options compact"><button className={payment==='Efectivo'?'active':''} onClick={()=>setPayment('Efectivo')}><Wallet/> Efectivo</button><button className={payment==='Tarjeta'?'active':''} onClick={()=>setPayment('Tarjeta')}><CreditCard/> Tarjeta</button></div><button className="primary wide" disabled={!lines.length} onClick={complete}>Cobrar y notificar por WhatsApp</button></aside></div></Modal>
+  const complete=()=>{const order=createOrder({customer,phone:'Mostrador',address:'Recoge en sucursal',lines:lines.map(({id,name,price,qty,note})=>({id,name,price,qty,note})),subtotal,delivery:0,total:subtotal,payment,paid:true,status:'Nuevo'});notifyOrderByWhatsApp(order);close()}
+  return <Modal title="Nueva venta en caja" close={close} large><div className="pos-layout"><div><label className="field-label">Cliente<input value={customer} onChange={e=>setCustomer(e.target.value)}/></label><div className="pos-products">{products.filter(p=>p.active).map(p=><button key={p.id} onClick={()=>add(p)}><ProductMedia product={p}/><b>{p.name}</b><small>{money(p.price)}</small></button>)}</div></div><aside><h3>Detalle de venta</h3>{lines.length===0?<Empty text="Selecciona productos"/>:lines.map(line=><div className="pos-line-wrap" key={line.id}><div className="pos-line"><span>{line.qty}×</span><b>{line.name}</b><strong>{money(line.price*line.qty)}</strong></div><input value={line.note||''} onChange={e=>updateLineNote(line.id,e.target.value)} placeholder="Indicaciones: sin salsa, sin cebolla..."/></div>)}<div className="pos-total"><span>Total</span><b>{money(subtotal)}</b></div><div className="payment-options compact"><button className={payment==='Efectivo'?'active':''} onClick={()=>setPayment('Efectivo')}><Wallet/> Efectivo</button><button className={payment==='Tarjeta'?'active':''} onClick={()=>setPayment('Tarjeta')}><CreditCard/> Tarjeta</button></div><button className="primary wide" disabled={!lines.length} onClick={complete}>Cobrar y notificar por WhatsApp</button></aside></div></Modal>
 }
 
 function ProductionView({store}){return <AdminView store={store} initialActive="Producción"/>}
@@ -216,8 +217,9 @@ export default function App(){
   const [role,setRoleState]=useState(()=>localStorage.getItem('fuego-active-role')||'cliente'),[cart,setCart]=useState([]),[showCart,setShowCart]=useState(false)
   const setRole=nextRole=>{localStorage.setItem('fuego-active-role',nextRole);setRoleState(nextRole)}
   const cartCount=useMemo(()=>cart.reduce((n,row)=>n+row.qty,0),[cart])
-  const addItem=product=>{setCart(rows=>rows.some(r=>r.id===product.id)?rows.map(r=>r.id===product.id?{...r,qty:r.qty+1}:r):[...rows,{...product,qty:1}]);setShowCart(true)}
+  const addItem=product=>{setCart(rows=>rows.some(r=>r.id===product.id)?rows.map(r=>r.id===product.id?{...r,qty:r.qty+1}:r):[...rows,{...product,qty:1,note:''}]);setShowCart(true)}
   const changeQty=(id,delta)=>setCart(rows=>rows.flatMap(row=>row.id!==id?[row]:row.qty+delta>0?[{...row,qty:row.qty+delta}]:[]))
+  const updateNote=(id,note)=>setCart(rows=>rows.map(row=>row.id===id?{...row,note}:row))
   const createOrder=payload=>{const order=store.createOrder(payload);setCart([]);return order}
-  return <div className="app"><Header role={role} setRole={setRole} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
+  return <div className="app"><Header role={role} setRole={setRole} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
 }
