@@ -54,7 +54,10 @@ export function useRestaurantStore() {
         station: product.station || (['Bebidas','Postres','Especiales'].includes(product.category) ? 'Barra' : 'Cocina'),
         deliveryEnabled: product.deliveryEnabled !== false,
       }))
-      return { ...initialState, ...parsed, products, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
+      const orders = (parsed.orders || initialState.orders).map(order => order.serviceType === 'En el lugar'
+        ? { ...order, serviceType: 'Para llevar', address: 'Recoge en sucursal' }
+        : order)
+      return { ...initialState, ...parsed, products, orders, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
     } catch {
       return initialState
     }
