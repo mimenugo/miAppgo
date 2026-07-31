@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react'
 const KEY = 'fuego-operations-v2'
 
 export const seedProducts = [
-  { id: 1, name: 'Tacos al pastor', desc: 'Piña asada, cebolla, cilantro y salsa tatemada.', price: 95, category: 'Tacos', station: 'Cocina', deliveryEnabled: true, emoji: '🌮', tone: 'coral', active: true },
+  { id: 1, name: 'Tacos al pastor', desc: 'Piña asada, cebolla, cilantro y salsa tatemada.', price: 35, category: 'Tacos', station: 'Cocina', deliveryEnabled: true, emoji: '🌮', tone: 'coral', active: true },
   { id: 2, name: 'Smash fuego', desc: 'Doble carne, cheddar, cebolla caramelizada y papas.', price: 145, category: 'Hamburguesas', station: 'Cocina', deliveryEnabled: true, emoji: '🍔', tone: 'amber', active: true },
   { id: 3, name: 'Pizza mexicana', desc: 'Chorizo, jalapeño, cebolla morada y queso gratinado.', price: 210, category: 'Pizzas', station: 'Cocina', deliveryEnabled: true, emoji: '🍕', tone: 'red', active: true },
   { id: 4, name: 'Bowl del huerto', desc: 'Arroz, vegetales asados, aguacate y aderezo cítrico.', price: 125, category: 'Especiales', station: 'Barra', deliveryEnabled: true, emoji: '🥗', tone: 'green', active: true },
   { id: 5, name: 'Horchata rosa', desc: 'Horchata artesanal con fresa natural. 1 litro.', price: 52, category: 'Bebidas', station: 'Barra', deliveryEnabled: true, emoji: '🥤', tone: 'pink', active: true },
   { id: 6, name: 'Flan de la casa', desc: 'Cremoso, con caramelo de naranja y vainilla.', price: 62, category: 'Postres', station: 'Barra', deliveryEnabled: true, emoji: '🍮', tone: 'gold', active: true },
+  { id: 7, name: 'Chiles rellenos', desc: 'Orden de 2 con arroz y frijoles.', price: 150, category: 'Especiales', station: 'Barra', deliveryEnabled: true, emoji: '🌶️', tone: 'green', active: true },
+  { id: 8, name: 'Tamales', desc: 'Orden de 3 con frijoles y sopa fría.', price: 130, category: 'Especiales', station: 'Barra', deliveryEnabled: true, emoji: '🫔', tone: 'amber', active: true },
 ]
 
 const initialState = {
@@ -42,7 +44,12 @@ export function useRestaurantStore() {
       const saved = localStorage.getItem(KEY)
       if (!saved) return initialState
       const parsed = JSON.parse(saved)
-      const products = (parsed.products || initialState.products).map(product => ({
+      const savedProducts = parsed.products || initialState.products
+      const migratedProducts = savedProducts.map(product => product.id === 1 && Number(product.price) === 95 ? { ...product, price: 35 } : product)
+      seedProducts.slice(6).forEach(product => {
+        if (!migratedProducts.some(savedProduct => savedProduct.id === product.id || savedProduct.name.toLowerCase() === product.name.toLowerCase())) migratedProducts.push(product)
+      })
+      const products = migratedProducts.map(product => ({
         ...product,
         station: product.station || (['Bebidas','Postres','Especiales'].includes(product.category) ? 'Barra' : 'Cocina'),
         deliveryEnabled: product.deliveryEnabled !== false,
