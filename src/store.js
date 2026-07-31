@@ -19,9 +19,9 @@ const initialState = {
     { id: 3, name: 'Ana Torres', phone: '33 8811 2299', address: 'López Cotilla 950, Americana', orders: 8, total: 2650 },
   ],
   orders: [
-    { id: 'FG-1048', customer: 'Valeria Soto', phone: '33 1234 5678', address: 'Av. Reforma 214, Centro', lines: [{ id: 2, name: 'Smash fuego', qty: 2, price: 145 }, { id: 5, name: 'Horchata rosa', qty: 1, price: 52 }], total: 381, payment: 'Tarjeta', paid: true, status: 'En cocina', createdAt: '12:18', driver: '' },
-    { id: 'FG-1047', customer: 'Marco Luna', phone: '33 7654 1122', address: 'Calle Olivo 88, Moderna', lines: [{ id: 3, name: 'Pizza mexicana', qty: 1, price: 210 }, { id: 5, name: 'Horchata rosa', qty: 2, price: 52 }], total: 353, payment: 'Efectivo', paid: false, status: 'Listo', createdAt: '12:07', driver: 'Roberto Gómez' },
-    { id: 'FG-1046', customer: 'Ana Torres', phone: '33 8811 2299', address: 'López Cotilla 950, Americana', lines: [{ id: 1, name: 'Tacos al pastor', qty: 3, price: 95 }, { id: 6, name: 'Flan de la casa', qty: 1, price: 62 }], total: 386, payment: 'Tarjeta', paid: true, status: 'En ruta', createdAt: '11:52', driver: 'Roberto Gómez' },
+    { id: 'FG-1048', customer: 'Valeria Soto', phone: '33 1234 5678', address: 'Av. Reforma 214, Centro', lines: [{ id: 2, name: 'Smash fuego', qty: 2, price: 145 }, { id: 5, name: 'Horchata rosa', qty: 1, price: 52 }], total: 381, payment: 'Tarjeta', paid: true, status: 'En cocina', createdAt: '12:18', createdHour: 12, driver: '' },
+    { id: 'FG-1047', customer: 'Marco Luna', phone: '33 7654 1122', address: 'Calle Olivo 88, Moderna', lines: [{ id: 3, name: 'Pizza mexicana', qty: 1, price: 210 }, { id: 5, name: 'Horchata rosa', qty: 2, price: 52 }], total: 353, payment: 'Efectivo', paid: false, status: 'Listo', createdAt: '12:07', createdHour: 12, driver: 'Roberto Gómez' },
+    { id: 'FG-1046', customer: 'Ana Torres', phone: '33 8811 2299', address: 'López Cotilla 950, Americana', lines: [{ id: 1, name: 'Tacos al pastor', qty: 3, price: 95 }, { id: 6, name: 'Flan de la casa', qty: 1, price: 62 }], total: 386, payment: 'Tarjeta', paid: true, status: 'En ruta', createdAt: '11:52', createdHour: 11, driver: 'Roberto Gómez' },
   ],
 }
 
@@ -44,7 +44,9 @@ export function useRestaurantStore() {
 
   const createOrder = payload => {
     const maxId = data.orders.reduce((max, order) => Math.max(max, Number(order.id.split('-')[1]) || 0), 1048)
-    const order = { ...payload, id: `FG-${maxId + 1}`, createdAt: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), status: 'Nuevo', driver: '' }
+    const now = new Date()
+    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const order = { ...payload, id: `FG-${maxId + 1}`, createdAt: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), createdDate: localDate, createdHour: now.getHours(), status: 'Nuevo', driver: '' }
     setData(current => {
       const known = current.customers.find(customer => customer.phone === payload.phone)
       const customers = known

@@ -161,8 +161,33 @@ function CustomersModule({customers}) {
 }
 
 function ReportsModule({store}) {
-  const cash=store.orders.filter(o=>o.payment==='Efectivo').reduce((s,o)=>s+o.total,0), card=store.orders.filter(o=>o.payment==='Tarjeta').reduce((s,o)=>s+o.total,0)
-  return <div className="report-grid"><article className="dash-card"><small>Ventas por método</small><h2>{money(cash+card)}</h2><div className="payment-bar"><span style={{width:`${(cash/(cash+card))*100}%`}}/></div><p><i className="cash-dot"/> Efectivo <b>{money(cash)}</b></p><p><i className="card-dot"/> Tarjeta <b>{money(card)}</b></p></article><article className="dash-card"><small>Desempeño operativo</small><h2>{store.orders.length} pedidos</h2><div className="metric-line"><span>Entregados</span><b>{store.orders.filter(o=>o.status==='Entregado').length}</b></div><div className="metric-line"><span>En proceso</span><b>{store.orders.filter(o=>!['Entregado','Cancelado'].includes(o.status)).length}</b></div><div className="metric-line"><span>Ticket promedio</span><b>{money((cash+card)/store.orders.length)}</b></div></article></div>
+  const toISO=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
+  const today=toISO(new Date())
+  const [period,setPeriod]=useState('diaria')
+  const [referenceDate,setReferenceDate]=useState(today)
+  const [month,setMonth]=useState(today.slice(0,7))
+  const [from,setFrom]=useState(today)
+  const [to,setTo]=useState(today)
+  const [shift,setShift]=useState('Matutino')
+  const orderDate=order=>order.createdDate||today
+  const orderHour=order=>{if(Number.isInteger(order.createdHour))return order.createdHour;const match=String(order.createdAt||'').match(/(\d{1,2})/);let hour=Number(match?.[1]||0);if(/p\.?\s*m/i.test(order.createdAt||'')&&hour<12)hour+=12;if(/a\.?\s*m/i.test(order.createdAt||'')&&hour===12)hour=0;return hour}
+  let rangeStart=referenceDate,rangeEnd=referenceDate
+  if(period==='semanal'){const date=new Date(`${referenceDate}T12:00:00`);const day=date.getDay()||7;date.setDate(date.getDate()-day+1);rangeStart=toISO(date);date.setDate(date.getDate()+6);rangeEnd=toISO(date)}
+  if(period==='mensual'){rangeStart=`${month}-01`;const date=new Date(`${month}-01T12:00:00`);rangeEnd=toISO(new Date(date.getFullYear(),date.getMonth()+1,0))}
+  if(period==='periodo'){rangeStart=from;rangeEnd=to}
+  const shifts={Matutino:[6,14],Vespertino:[14,22],Nocturno:[22,6]}
+  const filtered=store.orders.filter(order=>{const date=orderDate(order);if(date<rangeStart||date>rangeEnd)return false;if(period!=='turno')return true;const hour=orderHour(order),[start,end]=shifts[shift];return start<end?hour>=start&&hour<end:hour>=start||hour<end})
+  const cash=filtered.filter(o=>o.payment==='Efectivo').reduce((s,o)=>s+o.total,0)
+  const card=filtered.filter(o=>o.payment==='Tarjeta').reduce((s,o)=>s+o.total,0)
+  const total=cash+card
+  const ticket=filtered.length?total/filtered.length:0
+  const rangeLabel=period==='turno'?`${referenceDate} · ${shift}`:rangeStart===rangeEnd?rangeStart:`${rangeStart} al ${rangeEnd}`
+  return <div className="reports-module">
+    <section className="dash-card report-filters"><div><small>Tipo de reporte</small><h2>Ventas por periodo</h2></div><div className="report-controls"><label>Vista<select value={period} onChange={e=>setPeriod(e.target.value)}><option value="turno">Por turno</option><option value="diaria">Diaria</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option><option value="periodo">Periodo personalizado</option></select></label>{['turno','diaria','semanal'].includes(period)&&<label>Fecha de referencia<input type="date" value={referenceDate} onChange={e=>setReferenceDate(e.target.value)}/></label>}{period==='turno'&&<label>Turno<select value={shift} onChange={e=>setShift(e.target.value)}><option>Matutino</option><option>Vespertino</option><option>Nocturno</option></select></label>}{period==='mensual'&&<label>Mes<input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label>}{period==='periodo'&&<><label>Desde<input type="date" value={from} max={to} onChange={e=>setFrom(e.target.value)}/></label><label>Hasta<input type="date" value={to} min={from} onChange={e=>setTo(e.target.value)}/></label></>}</div><p className="range-label"><Clock3/> Mostrando: <b>{rangeLabel}</b></p></section>
+    <div className="report-summary"><article><small>Venta total</small><h3>{money(total)}</h3></article><article><small>Pedidos</small><h3>{filtered.length}</h3></article><article><small>Ticket promedio</small><h3>{money(ticket)}</h3></article><article><small>Entregados</small><h3>{filtered.filter(o=>o.status==='Entregado').length}</h3></article></div>
+    <div className="report-grid"><article className="dash-card"><small>Ventas por método</small><h2>{money(total)}</h2><div className="payment-bar"><span style={{width:`${total?(cash/total)*100:0}%`}}/></div><p><i className="cash-dot"/> Efectivo <b>{money(cash)}</b></p><p><i className="card-dot"/> Tarjeta <b>{money(card)}</b></p></article><article className="dash-card"><small>Desempeño operativo</small><h2>{filtered.length} pedidos</h2><div className="metric-line"><span>Pagados</span><b>{filtered.filter(o=>o.paid).length}</b></div><div className="metric-line"><span>Por cobrar</span><b>{filtered.filter(o=>!o.paid).length}</b></div><div className="metric-line"><span>Ticket promedio</span><b>{money(ticket)}</b></div></article></div>
+    <section className="dash-card report-detail"><div className="card-title"><div><small>Detalle del reporte</small><h2>Ventas incluidas</h2></div><b>{filtered.length} registros</b></div>{filtered.length===0?<Empty text="No hay ventas en el periodo seleccionado"/>:<div className="report-table">{filtered.map(order=><div key={order.id}><b>#{order.id}</b><span>{orderDate(order)} · {order.createdAt}</span><strong>{order.customer}</strong><span>{order.payment}</span><span className={`status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</span><b>{money(order.total)}</b></div>)}</div>}</section>
+  </div>
 }
 
 function PointOfSale({products,createOrder,close}) {
