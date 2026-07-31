@@ -59,13 +59,15 @@ export function useRestaurantStore() {
       }))
       const demoLocations = Object.fromEntries(initialState.orders.map(order => [order.id, order]))
       const orders = (parsed.orders || initialState.orders).map(order => {
-        const migrated = order.serviceType === 'En el lugar' ? { ...order, serviceType: 'Para llevar', address: 'Recoge en sucursal' } : order
+        const isCounterSale = ['Para llevar','En el lugar'].includes(order.serviceType) || order.phone === 'Mostrador' || order.customer === 'Venta mostrador' || order.address === 'Recoge en sucursal'
+        const migrated = isCounterSale ? { ...order, serviceType: 'Para llevar', address: '', coordinates: undefined, driver: '' } : { ...order, serviceType: order.serviceType || 'Domicilio' }
         return demoLocations[order.id] ? { ...migrated, address: demoLocations[order.id].address, coordinates: demoLocations[order.id].coordinates, serviceType: 'Domicilio', phone: demoLocations[order.id].phone, lines: demoLocations[order.id].lines, total: demoLocations[order.id].total } : migrated
       })
       initialState.orders.forEach(order => {
         if (!orders.some(savedOrder => savedOrder.id === order.id)) orders.push(order)
       })
-      return { ...initialState, ...parsed, products, orders, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
+      const customers = (parsed.customers || initialState.customers).map(customer => customer.phone === 'Mostrador' || customer.name === 'Venta mostrador' ? { ...customer, address: '' } : customer)
+      return { ...initialState, ...parsed, products, orders, customers, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
     } catch {
       return initialState
     }
@@ -85,12 +87,13 @@ export function useRestaurantStore() {
     const hasKitchen = payload.lines.some(line => (line.station || 'Cocina') === 'Cocina')
     const hasBar = payload.lines.some(line => line.station === 'Barra')
     const serviceType = payload.serviceType || (payload.address === 'Recoge en sucursal' ? 'Para llevar' : 'Domicilio')
-    const order = { ...payload, serviceType, id: `FG-${maxId + 1}`, createdAt: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), createdDate: localDate, createdHour: now.getHours(), status: hasKitchen ? 'Nuevo' : 'En barra', barStatus: hasBar ? 'Pendiente' : 'No aplica', driver: '' }
+    const normalizedPayload = serviceType === 'Domicilio' ? payload : { ...payload, address: '', coordinates: undefined }
+    const order = { ...normalizedPayload, serviceType, id: `FG-${maxId + 1}`, createdAt: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), createdDate: localDate, createdHour: now.getHours(), status: hasKitchen ? 'Nuevo' : 'En barra', barStatus: hasBar ? 'Pendiente' : 'No aplica', driver: '' }
     setData(current => {
       const known = current.customers.find(customer => customer.phone === payload.phone)
       const customers = known
-        ? current.customers.map(customer => customer.id === known.id ? { ...customer, orders: customer.orders + 1, total: customer.total + payload.total, address: payload.address } : customer)
-        : [...current.customers, { id: Date.now(), name: payload.customer, phone: payload.phone, address: payload.address, orders: 1, total: payload.total }]
+        ? current.customers.map(customer => customer.id === known.id ? { ...customer, orders: customer.orders + 1, total: customer.total + payload.total, address: serviceType === 'Domicilio' ? payload.address : customer.address } : customer)
+        : [...current.customers, { id: Date.now(), name: payload.customer, phone: payload.phone, address: serviceType === 'Domicilio' ? payload.address : '', orders: 1, total: payload.total }]
       return { ...current, orders: [order, ...current.orders], customers }
     })
     return order
