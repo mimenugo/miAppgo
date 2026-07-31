@@ -1,0 +1,57 @@
+# Base de datos de Gastro Suite
+
+Esquema relacional preparado para MySQL 8.0+. Estos archivos son independientes del frontend actual: no cambian su lógica ni conectan todavía la demostración local con MySQL.
+
+## Instalación en Laragon
+
+1. Inicia MySQL desde Laragon.
+2. Abre una terminal en `C:\laragon\www\gastro-suite`.
+3. Ejecuta los archivos en este orden:
+
+```powershell
+mysql -u root -p < database/mysql/001_core.sql
+mysql -u root -p < database/mysql/002_orders_payments.sql
+mysql -u root -p < database/mysql/003_operations.sql
+mysql -u root -p < database/mysql/004_seed_and_procedures.sql
+```
+
+Si el usuario `root` no tiene contraseña en el entorno local, omite `-p`.
+
+## Dominios incluidos
+
+- Negocio, sucursales, zona horaria y horarios.
+- Usuarios, sesiones, roles y permisos por sucursal.
+- Clientes, direcciones y consentimiento de privacidad.
+- Productos, categorías, modificadores, inventario y áreas de preparación múltiples.
+- Pedidos, partidas, personalizaciones y bitácora de estados.
+- Comandas independientes para cocina, barra, bebidas y despacho.
+- Pagos, transferencias, pasarelas, conciliación, eventos y reembolsos.
+- Caja, movimientos, arqueos y aperturas de cajón.
+- Repartidores, asignaciones, consentimiento y ubicación temporal.
+- Impresoras, trabajos pendientes, errores y reimpresión.
+- Notificaciones push, WhatsApp, correo y mensajes internos.
+- Configuración general, auditoría y recepción idempotente de webhooks.
+
+## Seguridad
+
+- Las contraseñas se guardan únicamente como hash Argon2id o bcrypt.
+- No existe ninguna tabla para almacenar números de tarjetas de clientes, CVV o fecha de vencimiento.
+- `payment_gateway_configs.secret_reference` guarda solo el identificador de una credencial en una bóveda de secretos; nunca la llave privada.
+- Los datos de la cuenta bancaria usan columnas cifradas y columnas `last4` para mostrarlos parcialmente ocultos.
+- Los eventos de Stripe, Mercado Pago o PayPal deben verificar firma antes de marcar `signature_verified=1`.
+- La API debe validar permisos, sucursal y propiedad del recurso en cada operación.
+
+## Fechas y zona horaria
+
+La conexión del backend debe operar en UTC (`SET time_zone = '+00:00'`). La zona oficial se guarda en `businesses.timezone`, inicialmente `America/Tijuana`. La API convierte las fechas al presentar información, imprimir tickets o calcular horarios programados.
+
+## Reglas transaccionales incluidas
+
+- `sp_change_order_status`: valida transiciones, bloquea el pedido, actualiza el estado y genera historial/auditoría en una transacción.
+- `sp_reconcile_payment`: compara el monto esperado contra el recibido y registra `paid` o `difference`, responsable y auditoría.
+- `v_order_payment_summary`: vista de conciliación por pedido.
+
+## Siguiente etapa
+
+Crear una API segura —por ejemplo Laravel 12, NestJS o Fastify— que consuma este esquema. La PWA debe dejar de leer `localStorage` solamente cuando los endpoints equivalentes estén terminados y probados. La migración recomendada es progresiva por módulos, empezando por autenticación, catálogo y pedidos.
+
