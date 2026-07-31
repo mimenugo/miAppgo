@@ -12,6 +12,7 @@ const money = value => new Intl.NumberFormat('es-MX', { style: 'currency', curre
 const pizzaSizeAdjustments = { Chica: -40, Mediana: 0, Grande: 70 }
 const pizzaPrice = (basePrice, size) => Math.max(0, Number(basePrice) + (pizzaSizeAdjustments[size] || 0))
 const lineText = order => order.lines.map(line => `${line.qty} ${line.name}${line.size ? ` · ${line.size}` : ''}${line.note ? ` (${line.note})` : ''}`).join(' · ')
+const lineStation = (line, products) => line.station || products.find(product=>product.id===line.id)?.station || 'Cocina'
 const WHATSAPP_TEST_NUMBER = '526645812107'
 
 function notifyOrderByWhatsApp(order) {
@@ -38,6 +39,7 @@ function notifyOrderByWhatsApp(order) {
 const roles = {
   administrador: { label: 'Administrador Full', icon: LayoutDashboard, subtitle: 'Acceso completo al restaurante' },
   cajero: { label: 'Cajero POS', icon: CircleDollarSign, subtitle: 'Ventas, caja y cortes' },
+  barra: { label: 'Barra / Despacho', icon: PackageCheck, subtitle: 'Productos listos y entrega' },
   repartidor: { label: 'Repartidor Rutas', icon: Bike, subtitle: 'Entregas y navegación' },
   produccion: { label: 'Cocina / Comandas', icon: ChefHat, subtitle: 'Producción de pedidos' },
   cliente: { label: 'Cliente', icon: ShoppingBag, subtitle: 'Tienda pública para ordenar' },
@@ -94,7 +96,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder 
   const [result,setResult]=useState(null)
   const subtotal=cart.reduce((sum,row)=>sum+row.price*row.qty,0), delivery=39, total=subtotal+delivery
   const valid=form.customer.trim()&&form.phone.trim()&&form.address.trim()
-  const confirm=()=>{const order=createOrder({...form,lines:cart.map(({id,name,price,qty,note,size})=>({id,name,price,qty,note,size})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order);setResult(order);setStep('done')}
+  const confirm=()=>{const order=createOrder({...form,lines:cart.map(({id,name,price,qty,note,size,station})=>({id,name,price,qty,note,size,station})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order);setResult(order);setStep('done')}
   return <div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><aside className="cart-panel">
     <div className="panel-head"><div><small>Pedido a domicilio</small><h2>{step==='cart'?'Tu bolsa':step==='checkout'?'Finalizar pedido':'¡Pedido confirmado!'}</h2></div><button onClick={close} aria-label="Cerrar"><X/></button></div>
     {step==='cart'&&<><div className="cart-list">{cart.length===0?<div className="empty"><ShoppingBag/><h3>Tu bolsa está vacía</h3></div>:cart.map(row=><div className="cart-row" key={row.id}><span className={`mini ${row.tone}`}>{row.emoji}</span><div><b>{row.name}</b><small>{money(row.price)}</small></div><div className="qty"><button onClick={()=>changeQty(row.id,-1)} aria-label={`Reducir ${row.name}`}><Minus size={14}/></button><span>{row.qty}</span><button onClick={()=>changeQty(row.id,1)} aria-label={`Aumentar ${row.name}`}><Plus size={14}/></button></div>{row.category==='Pizzas'&&<label className="item-size">Tamaño<select value={row.size||'Mediana'} onChange={e=>updateSize(row.id,e.target.value)}>{Object.keys(pizzaSizeAdjustments).map(size=><option key={size}>{size}</option>)}</select></label>}<label className="item-note">Indicaciones para cocina<input value={row.note||''} onChange={e=>updateNote(row.id,e.target.value)} placeholder="Ej. sin salsa, sin tomate, sin cebolla"/></label></div>)}</div>{cart.length>0&&<OrderTotal subtotal={subtotal} delivery={delivery} total={total}><button className="primary wide" onClick={()=>setStep('checkout')}>Continuar <ArrowRight size={18}/></button></OrderTotal>}</>}
@@ -109,7 +111,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder 
 
 function OrderTotal({subtotal,delivery,total,children}){return <div className="checkout"><p><span>Subtotal</span><b>{money(subtotal)}</b></p><p><span>Envío</span><b>{money(delivery)}</b></p><p className="total"><span>Total</span><b>{money(total)}</b></p>{children}</div>}
 
-const modules=[['Resumen',LayoutDashboard],['Pedidos',ShoppingBag],['Caja',ReceiptText],['Producción',CookingPot],['Reparto',Bike],['Productos',Store],['Clientes',Users],['Reportes',BarChart3]]
+const modules=[['Resumen',LayoutDashboard],['Pedidos',ShoppingBag],['Caja',ReceiptText],['Producción',CookingPot],['Barra',PackageCheck],['Reparto',Bike],['Productos',Store],['Clientes',Users],['Reportes',BarChart3]]
 function DashboardShell({active,setActive,children,onNewSale,title='Centro de operación',subtitle='Todo tu restaurante en un solo lugar.',moduleItems=modules}) {
   return <main className="app-shell"><aside className="sidebar"><div className="side-brand">🔥</div>{moduleItems.map(([label,Icon])=><button className={active===label?'active':''} key={label} onClick={()=>setActive(label)}><Icon/><span>{label}</span></button>)}</aside><div className="workspace"><div className="workspace-head"><div><span className="eyebrow">Panel de control</span><h1>{title}</h1><p>{subtitle}</p></div>{onNewSale&&<button className="outline" onClick={onNewSale}><Plus/> Nueva venta</button>}</div>{children}</div></main>
 }
@@ -122,6 +124,7 @@ function AdminView({store, initialActive = 'Resumen'}) {
     {active==='Pedidos'&&<OrdersModule store={store}/>}
     {active==='Caja'&&<CashControl store={store}/>}
     {active==='Producción'&&<ProductionBoard store={store}/>}
+    {active==='Barra'&&<BarBoard store={store}/>}
     {active==='Reparto'&&<DispatchModule store={store}/>}
     {active==='Productos'&&<ProductsModule store={store}/>}
     {active==='Clientes'&&<CustomersModule customers={store.customers}/>}
@@ -150,14 +153,27 @@ function Summary({store}) {
 function OrderRow({order}){return <div className="order-row"><span className="order-icon"><ShoppingBag/></span><div><b>#{order.id}</b><small>{order.customer} · {lineText(order)}</small></div><b>{money(order.total)}</b><span className={`status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</span><small>{order.createdAt}</small></div>}
 
 function OrdersModule({store}) {
-  return <section className="dash-card data-card"><div className="card-title"><div><small>Todos los canales</small><h2>Pedidos y ventas</h2></div></div><div className="data-table">{store.orders.map(order=><div className="data-row order-data" key={order.id}><b>#{order.id}</b><div><strong>{order.customer}</strong><small>{lineText(order)}</small></div><span>{order.payment}<small>{order.paid?'Pagado':'Cobrar al entregar'}</small></span><b>{money(order.total)}</b><select value={order.status} onChange={e=>store.updateOrder(order.id,{status:e.target.value})}>{['Nuevo','En cocina','Listo','Asignado','En ruta','Entregado','Cancelado'].map(s=><option key={s}>{s}</option>)}</select></div>)}</div></section>
+  return <section className="dash-card data-card"><div className="card-title"><div><small>Todos los canales</small><h2>Pedidos y ventas</h2></div></div><div className="data-table">{store.orders.map(order=><div className="data-row order-data" key={order.id}><b>#{order.id}</b><div><strong>{order.customer}</strong><small>{lineText(order)}</small></div><span>{order.payment}<small>{order.paid?'Pagado':'Cobrar al entregar'}</small></span><b>{money(order.total)}</b><select value={order.status} onChange={e=>store.updateOrder(order.id,{status:e.target.value})}>{['Nuevo','En cocina','En barra','Listo','Asignado','En ruta','Entregado','Cancelado'].map(s=><option key={s}>{s}</option>)}</select></div>)}</div></section>
 }
 
 function ProductionBoard({store}) {
-  const visible=store.orders.filter(o=>!['Entregado','Cancelado'].includes(o.status))
-  const advance=order=>store.updateOrder(order.id,{status:order.status==='Nuevo'?'En cocina':'Listo'})
+  const kitchenLines=order=>order.lines.filter(line=>lineStation(line,store.products)==='Cocina')
+  const visible=store.orders.filter(o=>!['Entregado','Cancelado','En barra'].includes(o.status)&&kitchenLines(o).length)
+  const advance=order=>store.updateOrder(order.id,{status:order.status==='Nuevo'?'En cocina':order.barStatus==='Pendiente'?'En barra':'Listo'})
   const stageClass={'Nuevo':'stage-new','En cocina':'stage-cooking','Listo':'stage-ready'}
-  return <div className="kanban">{['Nuevo','En cocina','Listo'].map(state=><section className={stageClass[state]} key={state}><header><h2>{state}</h2><span>{visible.filter(o=>o.status===state).length}</span></header>{visible.filter(o=>o.status===state).map(order=><article className="ticket" key={order.id}><div><b>#{order.id}</b><span><Clock3/> {order.createdAt}</span></div><h3>{lineText(order)}</h3><p><strong>Cliente:</strong> {order.customer}</p>{state!=='Listo'&&<footer><span>{order.payment}</span><button onClick={()=>advance(order)}>{state==='Nuevo'?'Aceptar':'Marcar listo'} <Check/></button></footer>}</article>)}</section>)}</div>
+  return <div className="kanban">{['Nuevo','En cocina','Listo'].map(state=><section className={stageClass[state]} key={state}><header><h2>{state}</h2><span>{visible.filter(o=>o.status===state).length}</span></header>{visible.filter(o=>o.status===state).map(order=><article className="ticket" key={order.id}><div><b>#{order.id}</b><span><Clock3/> {order.createdAt}</span></div><h3>{lineText({...order,lines:kitchenLines(order)})}</h3><p><strong>Cliente:</strong> {order.customer}</p>{state!=='Listo'&&<footer><span>{order.payment}</span><button onClick={()=>advance(order)}>{state==='Nuevo'?'Aceptar':'Terminar cocina'} <Check/></button></footer>}</article>)}</section>)}</div>
+}
+
+function BarBoard({store}) {
+  const barLines=order=>order.lines.filter(line=>lineStation(line,store.products)==='Barra')
+  const kitchenLines=order=>order.lines.filter(line=>lineStation(line,store.products)==='Cocina')
+  const orders=store.orders.filter(order=>!['Entregado','Cancelado'].includes(order.status)&&barLines(order).length)
+  const pending=orders.filter(order=>(order.barStatus||'Pendiente')!=='Preparado')
+  const prepared=orders.filter(order=>order.barStatus==='Preparado')
+  const markPrepared=order=>store.updateOrder(order.id,{barStatus:'Preparado',status:kitchenLines(order).length&&['Nuevo','En cocina'].includes(order.status)?order.status:'Listo'})
+  const deliver=order=>store.updateOrder(order.id,{status:'Entregado',paid:true})
+  const Card=({order,done=false})=><article className={`bar-ticket ${done?'prepared':''}`}><div className="bar-ticket-head"><div><small>#{order.id}</small><h3>{order.customer}</h3></div><span className={`status ${done?'entregado':'en-barra'}`}>{done?'Preparado':'En barra'}</span></div><div className="bar-items">{barLines(order).map(line=><p key={`${order.id}-${line.id}`}><span>{line.qty}×</span><b>{line.name}</b>{line.note&&<small>{line.note}</small>}</p>)}</div><footer><span>{order.address==='Recoge en sucursal'?'Entrega en mostrador':'Pedido a domicilio'}</span>{!done?<button className="primary" onClick={()=>markPrepared(order)}>Marcar preparado <Check/></button>:order.address==='Recoge en sucursal'?<button className="outline" onClick={()=>deliver(order)}>Entregar al cliente</button>:<b className="bar-ready"><Bike/> Listo para reparto</b>}</footer></article>
+  return <div className="bar-board"><section><header><div><small>PRODUCTOS SIN COCINA</small><h2>Por preparar / despachar</h2></div><span>{pending.length}</span></header><div className="bar-grid">{pending.length?pending.map(order=><Card order={order} key={order.id}/>):<Empty text="No hay productos pendientes en barra"/>}</div></section><section><header><div><small>COMPLETADOS</small><h2>Preparados</h2></div><span>{prepared.length}</span></header><div className="bar-grid">{prepared.length?prepared.map(order=><Card order={order} done key={order.id}/>):<Empty text="No hay pedidos preparados"/>}</div></section></div>
 }
 
 function DispatchModule({store}) {
@@ -189,11 +205,11 @@ function CashControl({store}) {
 
 function ProductsModule({store}) {
   const categories=['Tacos','Hamburguesas','Pizzas','Especiales','Bebidas','Postres']
-  const empty={name:'',desc:'',price:'',category:'Tacos',emoji:'🍽️',image:'',active:true}
+  const empty={name:'',desc:'',price:'',category:'Tacos',station:'Cocina',emoji:'🍽️',image:'',active:true}
   const [editing,setEditing]=useState(null)
   const save=()=>{if(editing.name&&Number(editing.price)>0){store.saveProduct({...editing,price:Number(editing.price)});setEditing(null)}}
   const loadImage=file=>{if(!file)return;if(file.size>1500000){alert('La imagen debe pesar menos de 1.5 MB.');return}const reader=new FileReader();reader.onload=()=>setEditing(current=>({...current,image:reader.result}));reader.readAsDataURL(file)}
-  return <><div className="module-toolbar"><p>{store.products.length} productos registrados</p><button className="primary" onClick={()=>setEditing(empty)}><Plus/> Nuevo producto</button></div><div className="product-admin-grid">{store.products.map(product=><article key={product.id}><span className={product.tone}><ProductMedia product={product}/></span><div><small>{product.category}</small><h3>{product.name}</h3><b>{money(product.price)}</b></div><label className="switch"><input type="checkbox" checked={product.active} onChange={()=>store.saveProduct({...product,active:!product.active})}/><i/></label><button className="icon-edit" onClick={()=>setEditing(product)}><Edit3/></button></article>)}</div>{editing&&<Modal title={editing.id?'Editar producto':'Nuevo producto'} close={()=>setEditing(null)}><div className="form-grid"><label>Nombre<input value={editing.name} onChange={e=>setEditing({...editing,name:e.target.value})}/></label><label>Precio<input type="number" value={editing.price} onChange={e=>setEditing({...editing,price:e.target.value})}/></label><label>Categoría<select value={editing.category} onChange={e=>setEditing({...editing,category:e.target.value})}>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select></label><label>Emoji de respaldo<input value={editing.emoji} onChange={e=>setEditing({...editing,emoji:e.target.value})}/></label><label className="full image-field">Imagen del producto<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>loadImage(e.target.files?.[0])}/><small>PNG, JPG o WebP · máximo 1.5 MB</small>{editing.image&&<div className="image-preview"><img src={editing.image} alt="Vista previa"/><button type="button" onClick={()=>setEditing({...editing,image:''})}><Trash2/> Quitar imagen</button></div>}</label><label className="full">Descripción<input value={editing.desc} onChange={e=>setEditing({...editing,desc:e.target.value})}/></label></div><button className="primary wide modal-save" onClick={save}>Guardar producto</button></Modal>}</>
+  return <><div className="module-toolbar"><p>{store.products.length} productos registrados</p><button className="primary" onClick={()=>setEditing(empty)}><Plus/> Nuevo producto</button></div><div className="product-admin-grid">{store.products.map(product=><article key={product.id}><span className={product.tone}><ProductMedia product={product}/></span><div><small>{product.category}</small><h3>{product.name}</h3><b>{money(product.price)}</b><em className={`station-badge ${product.station==='Barra'?'bar':''}`}>{product.station==='Barra'?'Barra / Despacho':'Cocina'}</em></div><label className="switch"><input type="checkbox" checked={product.active} onChange={()=>store.saveProduct({...product,active:!product.active})}/><i/></label><button className="icon-edit" onClick={()=>setEditing(product)}><Edit3/></button></article>)}</div>{editing&&<Modal title={editing.id?'Editar producto':'Nuevo producto'} close={()=>setEditing(null)}><div className="form-grid"><label>Nombre<input value={editing.name} onChange={e=>setEditing({...editing,name:e.target.value})}/></label><label>Precio<input type="number" value={editing.price} onChange={e=>setEditing({...editing,price:e.target.value})}/></label><label>Categoría<select value={editing.category} onChange={e=>setEditing({...editing,category:e.target.value})}>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select></label><label>Estación de preparación<select value={editing.station||'Cocina'} onChange={e=>setEditing({...editing,station:e.target.value})}><option value="Cocina">Cocina / Comandas</option><option value="Barra">Barra / Despacho (sin cocina)</option></select></label><label>Emoji de respaldo<input value={editing.emoji} onChange={e=>setEditing({...editing,emoji:e.target.value})}/></label><label className="full image-field">Imagen del producto<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>loadImage(e.target.files?.[0])}/><small>PNG, JPG o WebP · máximo 1.5 MB</small>{editing.image&&<div className="image-preview"><img src={editing.image} alt="Vista previa"/><button type="button" onClick={()=>setEditing({...editing,image:''})}><Trash2/> Quitar imagen</button></div>}</label><label className="full">Descripción<input value={editing.desc} onChange={e=>setEditing({...editing,desc:e.target.value})}/></label></div><button className="primary wide modal-save" onClick={save}>Guardar producto</button></Modal>}</>
 }
 
 function CustomersModule({customers}) {
@@ -238,11 +254,19 @@ function PointOfSale({products,createOrder,close}) {
   const updateLineNote=(id,note)=>setLines(rows=>rows.map(line=>line.id===id?{...line,note}:line))
   const updateLineSize=(id,size)=>setLines(rows=>rows.map(line=>line.id===id?{...line,size,price:pizzaPrice(line.basePrice||line.price,size)}:line))
   const subtotal=lines.reduce((s,r)=>s+r.price*r.qty,0)
-  const complete=()=>{const order=createOrder({customer,phone:'Mostrador',address:'Recoge en sucursal',lines:lines.map(({id,name,price,qty,note,size})=>({id,name,price,qty,note,size})),subtotal,delivery:0,total:subtotal,payment,paid:true,status:'Nuevo'});notifyOrderByWhatsApp(order);close()}
+  const complete=()=>{const order=createOrder({customer,phone:'Mostrador',address:'Recoge en sucursal',lines:lines.map(({id,name,price,qty,note,size,station})=>({id,name,price,qty,note,size,station})),subtotal,delivery:0,total:subtotal,payment,paid:true});notifyOrderByWhatsApp(order);close()}
   return <Modal title="Nueva venta en caja" close={close} large><div className="pos-layout"><div><label className="field-label">Cliente<input value={customer} onChange={e=>setCustomer(e.target.value)}/></label><div className="pos-products">{products.filter(p=>p.active).map(p=><button key={p.id} onClick={()=>add(p)}><ProductMedia product={p}/><b>{p.name}</b><small>{money(p.price)}</small></button>)}</div></div><aside><h3>Detalle de venta</h3>{lines.length===0?<Empty text="Selecciona productos"/>:lines.map(line=><div className="pos-line-wrap" key={line.id}><div className="pos-line"><div className="pos-qty"><button onClick={()=>changeLineQty(line.id,-1)} aria-label={`Reducir ${line.name}`}><Minus/></button><span>{line.qty}</span><button onClick={()=>changeLineQty(line.id,1)} aria-label={`Aumentar ${line.name}`}><Plus/></button></div><b>{line.name}</b><strong>{money(line.price*line.qty)}</strong></div>{line.category==='Pizzas'&&<label className="pos-size">Tamaño<select value={line.size} onChange={e=>updateLineSize(line.id,e.target.value)}>{Object.keys(pizzaSizeAdjustments).map(size=><option key={size}>{size}</option>)}</select></label>}<input value={line.note||''} onChange={e=>updateLineNote(line.id,e.target.value)} placeholder="Indicaciones: sin salsa, sin cebolla..."/></div>)}<div className="pos-total"><span>Total</span><b>{money(subtotal)}</b></div><div className="payment-options compact"><button className={payment==='Efectivo'?'active':''} onClick={()=>setPayment('Efectivo')}><Wallet/> Efectivo</button><button className={payment==='Tarjeta'?'active':''} onClick={()=>setPayment('Tarjeta')}><CreditCard/> Tarjeta</button></div><button className="primary wide" disabled={!lines.length} onClick={complete}>Cobrar y notificar por WhatsApp</button></aside></div></Modal>
 }
 
-function ProductionView({store}){return <AdminView store={store} initialActive="Producción"/>}
+function ProductionView({store}) {
+  const [active,setActive]=useState('Producción')
+  return <DashboardShell active={active} setActive={setActive} moduleItems={[[active,CookingPot]]} title="Cocina / Comandas" subtitle="Solo productos que requieren preparación en cocina."><ProductionBoard store={store}/></DashboardShell>
+}
+
+function BarView({store}) {
+  const [active,setActive]=useState('Barra')
+  return <DashboardShell active={active} setActive={setActive} moduleItems={[[active,PackageCheck]]} title="Barra / Despacho" subtitle="Productos listos o que no requieren pasar por cocina."><BarBoard store={store}/></DashboardShell>
+}
 
 function DriverView({store}) {
   const [tab,setTab]=useState('Por entregar')
@@ -277,5 +301,5 @@ export default function App(){
   const updateNote=(id,note)=>setCart(rows=>rows.map(row=>row.id===id?{...row,note}:row))
   const updateSize=(id,size)=>setCart(rows=>rows.map(row=>row.id===id?{...row,size,price:pizzaPrice(row.basePrice||row.price,size)}:row))
   const createOrder=payload=>{const order=store.createOrder(payload);setCart([]);return order}
-  return <div className="app"><Header role={role} openSessions={()=>setSessionOpen(true)} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{sessionOpen&&<SessionSelector role={role} setRole={setRole} close={()=>setSessionOpen(false)}/>} {role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='cajero'&&<CashierView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
+  return <div className="app"><Header role={role} openSessions={()=>setSessionOpen(true)} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{sessionOpen&&<SessionSelector role={role} setRole={setRole} close={()=>setSessionOpen(false)}/>} {role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='cajero'&&<CashierView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='barra'&&<BarView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
 }
