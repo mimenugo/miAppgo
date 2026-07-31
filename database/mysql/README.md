@@ -6,16 +6,33 @@ Esquema relacional preparado para MySQL 8.0+. Estos archivos son independientes 
 
 1. Inicia MySQL desde Laragon.
 2. Abre una terminal en `C:\laragon\www\gastro-suite`.
-3. Ejecuta los archivos en este orden:
+3. En PowerShell, ejecuta el instalador incluido:
 
 ```powershell
-mysql -u root -p < database/mysql/001_core.sql
-mysql -u root -p < database/mysql/002_orders_payments.sql
-mysql -u root -p < database/mysql/003_operations.sql
-mysql -u root -p < database/mysql/004_seed_and_procedures.sql
+PowerShell -ExecutionPolicy Bypass -File .\database\mysql\install.ps1
 ```
 
-Si el usuario `root` no tiene contraseña en el entorno local, omite `-p`.
+Si el usuario `root` tiene contraseña:
+
+```powershell
+PowerShell -ExecutionPolicy Bypass -File .\database\mysql\install.ps1 -PromptPassword
+```
+
+PowerShell no admite la sintaxis `mysql ... < archivo.sql`; el operador `<` produce `RedirectionNotSupported`. El instalador utiliza internamente el comando `source` de MySQL.
+
+### Ejecución manual desde PowerShell
+
+También puedes ejecutar cada archivo con la ruta completa de MySQL:
+
+```powershell
+$mysql = "C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe"
+& $mysql -u root --default-character-set=utf8mb4 --execute="source C:/laragon/www/gastro-suite/database/mysql/001_core.sql"
+& $mysql -u root --default-character-set=utf8mb4 --execute="source C:/laragon/www/gastro-suite/database/mysql/002_orders_payments.sql"
+& $mysql -u root --default-character-set=utf8mb4 --execute="source C:/laragon/www/gastro-suite/database/mysql/003_operations.sql"
+& $mysql -u root --default-character-set=utf8mb4 --execute="source C:/laragon/www/gastro-suite/database/mysql/004_seed_and_procedures.sql"
+```
+
+Agrega `-p` después de `root` cuando MySQL solicite contraseña.
 
 ## Dominios incluidos
 
@@ -54,4 +71,3 @@ La conexión del backend debe operar en UTC (`SET time_zone = '+00:00'`). La zon
 ## Siguiente etapa
 
 Crear una API segura —por ejemplo Laravel 12, NestJS o Fastify— que consuma este esquema. La PWA debe dejar de leer `localStorage` solamente cuando los endpoints equivalentes estén terminados y probados. La migración recomendada es progresiva por módulos, empezando por autenticación, catálogo y pedidos.
-
