@@ -15,6 +15,26 @@ export const seedProducts = [
 
 const initialState = {
   products: seedProducts,
+  posSettings: {
+    cashPrinter: 'Impresora principal de caja',
+    kitchenPrinter: 'Impresora de cocina',
+    barPrinter: 'Impresora de barra / mostrador',
+    kitchenPrinterEnabled: true,
+    barPrinterEnabled: true,
+    cashDrawerEnabled: true,
+    cashDrawerCompatible: false,
+    accountHolder: 'Restaurante Fuego',
+    bank: 'Banco de prueba',
+    accountNumber: '0123456789',
+    clabe: '012345678901234567',
+    cardNumber: '',
+    paymentQr: '',
+    openingTime: '11:00',
+    closingTime: '21:00',
+    slotMinutes: 30,
+    prepMinutes: 30,
+    slotCapacity: 4,
+  },
   cashRegister: {
     open: true,
     openedAt: new Date().toISOString(),
@@ -67,7 +87,15 @@ export function useRestaurantStore() {
         if (!orders.some(savedOrder => savedOrder.id === order.id)) orders.push(order)
       })
       const customers = (parsed.customers || initialState.customers).map(customer => customer.phone === 'Mostrador' || customer.name === 'Venta mostrador' ? { ...customer, address: '' } : customer)
-      return { ...initialState, ...parsed, products, orders, customers, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
+      return {
+        ...initialState,
+        ...parsed,
+        products,
+        orders,
+        customers,
+        cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) },
+        posSettings: { ...initialState.posSettings, ...(parsed.posSettings || {}) },
+      }
     } catch {
       return initialState
     }
@@ -84,11 +112,27 @@ export function useRestaurantStore() {
     const maxId = data.orders.reduce((max, order) => Math.max(max, Number(order.id.split('-')[1]) || 0), 1048)
     const now = new Date()
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    const hasKitchen = payload.lines.some(line => (line.station || 'Cocina') === 'Cocina')
-    const hasBar = payload.lines.some(line => line.station === 'Barra')
+    const hasKitchen = payload.lines.some(line => ['Cocina','Ambas'].includes(line.station || 'Cocina'))
+    const hasBar = payload.lines.some(line => ['Barra','Ambas'].includes(line.station))
     const serviceType = payload.serviceType || (payload.address === 'Recoge en sucursal' ? 'Para llevar' : 'Domicilio')
     const normalizedPayload = serviceType === 'Domicilio' ? payload : { ...payload, address: '', coordinates: undefined }
-    const order = { ...normalizedPayload, serviceType, id: `FG-${maxId + 1}`, createdAt: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), createdDate: localDate, createdHour: now.getHours(), status: hasKitchen ? 'Nuevo' : 'En barra', barStatus: hasBar ? 'Pendiente' : 'No aplica', driver: '' }
+    const preparationStatus = {
+      Cocina: hasKitchen ? 'Pendiente' : 'No aplica',
+      Barra: hasBar ? 'Pendiente' : 'No aplica',
+    }
+    const order = {
+      ...normalizedPayload,
+      serviceType,
+      id: `FG-${maxId + 1}`,
+      createdAt: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+      createdDate: localDate,
+      createdHour: now.getHours(),
+      status: payload.status || (payload.paid ? (hasKitchen || hasBar ? 'En preparación' : 'Pagado') : 'Pendiente de pago'),
+      paymentStatus: payload.paid ? 'Pagado' : 'Pendiente de validar',
+      preparationStatus,
+      barStatus: hasBar ? 'Pendiente' : 'No aplica',
+      driver: '',
+    }
     setData(current => {
       const known = current.customers.find(customer => customer.phone === payload.phone)
       const customers = known
@@ -104,6 +148,11 @@ export function useRestaurantStore() {
     products: product.id
       ? current.products.map(item => item.id === product.id ? product : item)
       : [...current.products, { ...product, id: Date.now(), tone: 'amber', active: true }],
+  }))
+
+  const savePosSettings = settings => setData(current => ({
+    ...current,
+    posSettings: { ...current.posSettings, ...settings },
   }))
 
   const openCashRegister = openingAmount => setData(current => ({
@@ -138,5 +187,5 @@ export function useRestaurantStore() {
     },
   }))
 
-  return { ...data, createOrder, updateOrder, saveProduct, openCashRegister, addCashMovement, closeCashRegister }
+  return { ...data, createOrder, updateOrder, saveProduct, savePosSettings, openCashRegister, addCashMovement, closeCashRegister }
 }
