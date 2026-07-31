@@ -8,12 +8,14 @@ import {
 import { useRestaurantStore } from './store'
 
 const money = value => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
-const lineText = order => order.lines.map(line => `${line.qty} ${line.name}${line.note ? ` (${line.note})` : ''}`).join(' · ')
+const pizzaSizeAdjustments = { Chica: -40, Mediana: 0, Grande: 70 }
+const pizzaPrice = (basePrice, size) => Math.max(0, Number(basePrice) + (pizzaSizeAdjustments[size] || 0))
+const lineText = order => order.lines.map(line => `${line.qty} ${line.name}${line.size ? ` · ${line.size}` : ''}${line.note ? ` (${line.note})` : ''}`).join(' · ')
 const WHATSAPP_TEST_NUMBER = '526645812107'
 
 function notifyOrderByWhatsApp(order) {
   const products = order.lines
-    .map(line => `• ${line.qty} x ${line.name}${line.note ? `\n  _Indicaciones: ${line.note}_` : ''} — ${money(line.price * line.qty)}`)
+    .map(line => `• ${line.qty} x ${line.name}${line.size ? ` (${line.size})` : ''}${line.note ? `\n  _Indicaciones: ${line.note}_` : ''} — ${money(line.price * line.qty)}`)
     .join('\n')
   const message = [
     '🔥 *NUEVO PEDIDO FUEGO*',
@@ -64,7 +66,7 @@ function Header({ role, setRole, cartCount, onCart }) {
   </header>
 }
 
-function CustomerView({ products, cart, addItem, changeQty, updateNote, showCart, setShowCart, createOrder }) {
+function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSize, showCart, setShowCart, createOrder }) {
   const [category,setCategory]=useState('Todos')
   const [query,setQuery]=useState('')
   const categories=['Todos',...new Set(products.filter(p=>p.active).map(p=>p.category))]
@@ -77,21 +79,21 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, showCart
         <div className="product-grid">{visible.map(product=><article className="product-card" key={product.id}><div className={`product-image ${product.tone}`}><ProductMedia product={product}/><b><Star size={13} fill="currentColor"/> 4.9</b></div><div className="product-info"><small>{product.category}</small><h3>{product.name}</h3><p>{product.desc}</p><footer><strong>{money(product.price)}</strong><button onClick={()=>addItem(product)} aria-label={`Agregar ${product.name}`}><Plus size={19}/></button></footer></div></article>)}</div>
       </section>
     </main>
-    {showCart&&<Checkout cart={cart} changeQty={changeQty} updateNote={updateNote} close={()=>setShowCart(false)} createOrder={createOrder}/>}
+    {showCart&&<Checkout cart={cart} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} close={()=>setShowCart(false)} createOrder={createOrder}/>}
   </>
 }
 
-function Checkout({ cart, changeQty, updateNote, close, createOrder }) {
+function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder }) {
   const [step,setStep]=useState('cart')
   const [payment,setPayment]=useState('Efectivo')
   const [form,setForm]=useState({customer:'',phone:'',address:'',reference:'',changeFor:''})
   const [result,setResult]=useState(null)
   const subtotal=cart.reduce((sum,row)=>sum+row.price*row.qty,0), delivery=39, total=subtotal+delivery
   const valid=form.customer.trim()&&form.phone.trim()&&form.address.trim()
-  const confirm=()=>{const order=createOrder({...form,lines:cart.map(({id,name,price,qty,note})=>({id,name,price,qty,note})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order);setResult(order);setStep('done')}
+  const confirm=()=>{const order=createOrder({...form,lines:cart.map(({id,name,price,qty,note,size})=>({id,name,price,qty,note,size})),subtotal,delivery,total,payment,paid:payment==='Tarjeta'});notifyOrderByWhatsApp(order);setResult(order);setStep('done')}
   return <div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><aside className="cart-panel">
     <div className="panel-head"><div><small>Pedido a domicilio</small><h2>{step==='cart'?'Tu bolsa':step==='checkout'?'Finalizar pedido':'¡Pedido confirmado!'}</h2></div><button onClick={close} aria-label="Cerrar"><X/></button></div>
-    {step==='cart'&&<><div className="cart-list">{cart.length===0?<div className="empty"><ShoppingBag/><h3>Tu bolsa está vacía</h3></div>:cart.map(row=><div className="cart-row" key={row.id}><span className={`mini ${row.tone}`}>{row.emoji}</span><div><b>{row.name}</b><small>{money(row.price)}</small></div><div className="qty"><button onClick={()=>changeQty(row.id,-1)}><Minus size={14}/></button><span>{row.qty}</span><button onClick={()=>changeQty(row.id,1)}><Plus size={14}/></button></div><label className="item-note">Indicaciones para cocina<input value={row.note||''} onChange={e=>updateNote(row.id,e.target.value)} placeholder="Ej. sin salsa, sin tomate, sin cebolla"/></label></div>)}</div>{cart.length>0&&<OrderTotal subtotal={subtotal} delivery={delivery} total={total}><button className="primary wide" onClick={()=>setStep('checkout')}>Continuar <ArrowRight size={18}/></button></OrderTotal>}</>}
+    {step==='cart'&&<><div className="cart-list">{cart.length===0?<div className="empty"><ShoppingBag/><h3>Tu bolsa está vacía</h3></div>:cart.map(row=><div className="cart-row" key={row.id}><span className={`mini ${row.tone}`}>{row.emoji}</span><div><b>{row.name}</b><small>{money(row.price)}</small></div><div className="qty"><button onClick={()=>changeQty(row.id,-1)} aria-label={`Reducir ${row.name}`}><Minus size={14}/></button><span>{row.qty}</span><button onClick={()=>changeQty(row.id,1)} aria-label={`Aumentar ${row.name}`}><Plus size={14}/></button></div>{row.category==='Pizzas'&&<label className="item-size">Tamaño<select value={row.size||'Mediana'} onChange={e=>updateSize(row.id,e.target.value)}>{Object.keys(pizzaSizeAdjustments).map(size=><option key={size}>{size}</option>)}</select></label>}<label className="item-note">Indicaciones para cocina<input value={row.note||''} onChange={e=>updateNote(row.id,e.target.value)} placeholder="Ej. sin salsa, sin tomate, sin cebolla"/></label></div>)}</div>{cart.length>0&&<OrderTotal subtotal={subtotal} delivery={delivery} total={total}><button className="primary wide" onClick={()=>setStep('checkout')}>Continuar <ArrowRight size={18}/></button></OrderTotal>}</>}
     {step==='checkout'&&<div className="checkout-form"><div className="step-title"><span>1</span><h3>Datos de entrega</h3></div><div className="form-grid"><label>Nombre completo<input value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})} placeholder="¿Quién recibe?"/></label><label>Teléfono<input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="33 1234 5678"/></label><label className="full">Dirección<input value={form.address} onChange={e=>setForm({...form,address:e.target.value})} placeholder="Calle, número, colonia"/></label><label className="full">Referencia<input value={form.reference} onChange={e=>setForm({...form,reference:e.target.value})} placeholder="Portón, entre calles, indicaciones"/></label></div>
       <div className="step-title"><span>2</span><h3>Método de pago</h3></div><div className="payment-options"><button className={payment==='Efectivo'?'active':''} onClick={()=>setPayment('Efectivo')}><Wallet/><span><b>Efectivo</b><small>Paga al recibir</small></span>{payment==='Efectivo'&&<Check/>}</button><button className={payment==='Tarjeta'?'active':''} onClick={()=>setPayment('Tarjeta')}><CreditCard/><span><b>Tarjeta</b><small>Pago seguro</small></span>{payment==='Tarjeta'&&<Check/>}</button></div>
       {payment==='Efectivo'&&<label className="change-field">¿Con cuánto pagarás?<input type="number" value={form.changeFor} onChange={e=>setForm({...form,changeFor:e.target.value})} placeholder={`Mínimo ${total}`}/></label>}
@@ -138,7 +140,8 @@ function OrdersModule({store}) {
 function ProductionBoard({store}) {
   const visible=store.orders.filter(o=>!['Entregado','Cancelado'].includes(o.status))
   const advance=order=>store.updateOrder(order.id,{status:order.status==='Nuevo'?'En cocina':'Listo'})
-  return <div className="kanban">{['Nuevo','En cocina','Listo'].map(state=><section key={state}><header><h2>{state}</h2><span>{visible.filter(o=>o.status===state).length}</span></header>{visible.filter(o=>o.status===state).map(order=><article className="ticket" key={order.id}><div><b>#{order.id}</b><span><Clock3/> {order.createdAt}</span></div><h3>{lineText(order)}</h3><p><strong>Cliente:</strong> {order.customer}</p>{state!=='Listo'&&<footer><span>{order.payment}</span><button onClick={()=>advance(order)}>{state==='Nuevo'?'Aceptar':'Marcar listo'} <Check/></button></footer>}</article>)}</section>)}</div>
+  const stageClass={'Nuevo':'stage-new','En cocina':'stage-cooking','Listo':'stage-ready'}
+  return <div className="kanban">{['Nuevo','En cocina','Listo'].map(state=><section className={stageClass[state]} key={state}><header><h2>{state}</h2><span>{visible.filter(o=>o.status===state).length}</span></header>{visible.filter(o=>o.status===state).map(order=><article className="ticket" key={order.id}><div><b>#{order.id}</b><span><Clock3/> {order.createdAt}</span></div><h3>{lineText(order)}</h3><p><strong>Cliente:</strong> {order.customer}</p>{state!=='Listo'&&<footer><span>{order.payment}</span><button onClick={()=>advance(order)}>{state==='Nuevo'?'Aceptar':'Marcar listo'} <Check/></button></footer>}</article>)}</section>)}</div>
 }
 
 function DispatchModule({store}) {
@@ -192,11 +195,13 @@ function ReportsModule({store}) {
 
 function PointOfSale({products,createOrder,close}) {
   const [lines,setLines]=useState([]),[payment,setPayment]=useState('Efectivo'),[customer,setCustomer]=useState('Venta mostrador')
-  const add=p=>setLines(rows=>rows.some(r=>r.id===p.id)?rows.map(r=>r.id===p.id?{...r,qty:r.qty+1}:r):[...rows,{...p,qty:1,note:''}])
+  const add=p=>setLines(rows=>rows.some(r=>r.id===p.id)?rows.map(r=>r.id===p.id?{...r,qty:r.qty+1}:r):[...rows,{...p,basePrice:p.price,price:p.price,qty:1,note:'',size:p.category==='Pizzas'?'Mediana':''}])
+  const changeLineQty=(id,delta)=>setLines(rows=>rows.flatMap(line=>line.id!==id?[line]:line.qty+delta>0?[{...line,qty:line.qty+delta}]:[]))
   const updateLineNote=(id,note)=>setLines(rows=>rows.map(line=>line.id===id?{...line,note}:line))
+  const updateLineSize=(id,size)=>setLines(rows=>rows.map(line=>line.id===id?{...line,size,price:pizzaPrice(line.basePrice||line.price,size)}:line))
   const subtotal=lines.reduce((s,r)=>s+r.price*r.qty,0)
-  const complete=()=>{const order=createOrder({customer,phone:'Mostrador',address:'Recoge en sucursal',lines:lines.map(({id,name,price,qty,note})=>({id,name,price,qty,note})),subtotal,delivery:0,total:subtotal,payment,paid:true,status:'Nuevo'});notifyOrderByWhatsApp(order);close()}
-  return <Modal title="Nueva venta en caja" close={close} large><div className="pos-layout"><div><label className="field-label">Cliente<input value={customer} onChange={e=>setCustomer(e.target.value)}/></label><div className="pos-products">{products.filter(p=>p.active).map(p=><button key={p.id} onClick={()=>add(p)}><ProductMedia product={p}/><b>{p.name}</b><small>{money(p.price)}</small></button>)}</div></div><aside><h3>Detalle de venta</h3>{lines.length===0?<Empty text="Selecciona productos"/>:lines.map(line=><div className="pos-line-wrap" key={line.id}><div className="pos-line"><span>{line.qty}×</span><b>{line.name}</b><strong>{money(line.price*line.qty)}</strong></div><input value={line.note||''} onChange={e=>updateLineNote(line.id,e.target.value)} placeholder="Indicaciones: sin salsa, sin cebolla..."/></div>)}<div className="pos-total"><span>Total</span><b>{money(subtotal)}</b></div><div className="payment-options compact"><button className={payment==='Efectivo'?'active':''} onClick={()=>setPayment('Efectivo')}><Wallet/> Efectivo</button><button className={payment==='Tarjeta'?'active':''} onClick={()=>setPayment('Tarjeta')}><CreditCard/> Tarjeta</button></div><button className="primary wide" disabled={!lines.length} onClick={complete}>Cobrar y notificar por WhatsApp</button></aside></div></Modal>
+  const complete=()=>{const order=createOrder({customer,phone:'Mostrador',address:'Recoge en sucursal',lines:lines.map(({id,name,price,qty,note,size})=>({id,name,price,qty,note,size})),subtotal,delivery:0,total:subtotal,payment,paid:true,status:'Nuevo'});notifyOrderByWhatsApp(order);close()}
+  return <Modal title="Nueva venta en caja" close={close} large><div className="pos-layout"><div><label className="field-label">Cliente<input value={customer} onChange={e=>setCustomer(e.target.value)}/></label><div className="pos-products">{products.filter(p=>p.active).map(p=><button key={p.id} onClick={()=>add(p)}><ProductMedia product={p}/><b>{p.name}</b><small>{money(p.price)}</small></button>)}</div></div><aside><h3>Detalle de venta</h3>{lines.length===0?<Empty text="Selecciona productos"/>:lines.map(line=><div className="pos-line-wrap" key={line.id}><div className="pos-line"><div className="pos-qty"><button onClick={()=>changeLineQty(line.id,-1)} aria-label={`Reducir ${line.name}`}><Minus/></button><span>{line.qty}</span><button onClick={()=>changeLineQty(line.id,1)} aria-label={`Aumentar ${line.name}`}><Plus/></button></div><b>{line.name}</b><strong>{money(line.price*line.qty)}</strong></div>{line.category==='Pizzas'&&<label className="pos-size">Tamaño<select value={line.size} onChange={e=>updateLineSize(line.id,e.target.value)}>{Object.keys(pizzaSizeAdjustments).map(size=><option key={size}>{size}</option>)}</select></label>}<input value={line.note||''} onChange={e=>updateLineNote(line.id,e.target.value)} placeholder="Indicaciones: sin salsa, sin cebolla..."/></div>)}<div className="pos-total"><span>Total</span><b>{money(subtotal)}</b></div><div className="payment-options compact"><button className={payment==='Efectivo'?'active':''} onClick={()=>setPayment('Efectivo')}><Wallet/> Efectivo</button><button className={payment==='Tarjeta'?'active':''} onClick={()=>setPayment('Tarjeta')}><CreditCard/> Tarjeta</button></div><button className="primary wide" disabled={!lines.length} onClick={complete}>Cobrar y notificar por WhatsApp</button></aside></div></Modal>
 }
 
 function ProductionView({store}){return <AdminView store={store} initialActive="Producción"/>}
@@ -217,9 +222,10 @@ export default function App(){
   const [role,setRoleState]=useState(()=>localStorage.getItem('fuego-active-role')||'cliente'),[cart,setCart]=useState([]),[showCart,setShowCart]=useState(false)
   const setRole=nextRole=>{localStorage.setItem('fuego-active-role',nextRole);setRoleState(nextRole)}
   const cartCount=useMemo(()=>cart.reduce((n,row)=>n+row.qty,0),[cart])
-  const addItem=product=>{setCart(rows=>rows.some(r=>r.id===product.id)?rows.map(r=>r.id===product.id?{...r,qty:r.qty+1}:r):[...rows,{...product,qty:1,note:''}]);setShowCart(true)}
+  const addItem=product=>{setCart(rows=>rows.some(r=>r.id===product.id)?rows.map(r=>r.id===product.id?{...r,qty:r.qty+1}:r):[...rows,{...product,basePrice:product.price,qty:1,note:'',size:product.category==='Pizzas'?'Mediana':''}]);setShowCart(true)}
   const changeQty=(id,delta)=>setCart(rows=>rows.flatMap(row=>row.id!==id?[row]:row.qty+delta>0?[{...row,qty:row.qty+delta}]:[]))
   const updateNote=(id,note)=>setCart(rows=>rows.map(row=>row.id===id?{...row,note}:row))
+  const updateSize=(id,size)=>setCart(rows=>rows.map(row=>row.id===id?{...row,size,price:pizzaPrice(row.basePrice||row.price,size)}:row))
   const createOrder=payload=>{const order=store.createOrder(payload);setCart([]);return order}
-  return <div className="app"><Header role={role} setRole={setRole} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
+  return <div className="app"><Header role={role} setRole={setRole} cartCount={cartCount} onCart={()=>setShowCart(true)}/>{role==='cliente'&&<CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder}/>} {role==='administrador'&&<AdminView store={store}/>} {role==='produccion'&&<ProductionView store={store}/>} {role==='repartidor'&&<DriverView store={store}/>}</div>
 }
