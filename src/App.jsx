@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import {
   ArrowRight, BarChart3, Bike, Check, ChefHat, ChevronRight, CircleDollarSign,
   Clock3, CookingPot, CreditCard, Edit3, LayoutDashboard, Map, MapPin,
@@ -277,25 +279,73 @@ function BarView({store}) {
   return <DashboardShell active={active} setActive={setActive} moduleItems={[[active,PackageCheck]]} title="Barra / Despacho" subtitle="Productos listos o que no requieren pasar por cocina."><BarBoard store={store}/></DashboardShell>
 }
 
+function RealDeliveryMap({orders,selectedOrder,onSelect}) {
+  const mapElement=useRef(null)
+  const mapInstance=useRef(null)
+  const orderLayer=useRef(null)
+  const routeLayer=useRef(null)
+  const locationMarker=useRef(null)
+  const [location,setLocation]=useState(null)
+  const [locationStatus,setLocationStatus]=useState('Solicitando ubicación del dispositivo…')
+
+  useEffect(()=>{
+    if(!mapElement.current||mapInstance.current)return
+    const map=L.map(mapElement.current,{zoomControl:false}).setView([32.5149,-117.0382],12)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map)
+    L.control.zoom({position:'topright'}).addTo(map)
+    map.on('locationfound',event=>{
+      const next={lat:event.latlng.lat,lng:event.latlng.lng,accuracy:event.accuracy,updatedAt:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+      setLocation(next)
+      setLocationStatus('Ubicación en tiempo real activa')
+      const icon=L.divIcon({className:'leaflet-live-icon',html:'<span>●</span>',iconSize:[28,28],iconAnchor:[14,14]})
+      if(locationMarker.current)locationMarker.current.setLatLng(event.latlng)
+      else locationMarker.current=L.marker(event.latlng,{icon,zIndexOffset:1000}).addTo(map).bindTooltip('Tu ubicación actual')
+    })
+    map.on('locationerror',()=>setLocationStatus('No fue posible obtener la ubicación. Revisa el permiso GPS.'))
+    mapInstance.current=map
+    map.locate({watch:true,setView:true,maxZoom:16,enableHighAccuracy:true})
+    return ()=>{map.stopLocate();map.remove();mapInstance.current=null}
+  },[])
+
+  useEffect(()=>{
+    const map=mapInstance.current
+    if(!map)return
+    if(orderLayer.current)orderLayer.current.remove()
+    orderLayer.current=L.layerGroup().addTo(map)
+    const points=[]
+    orders.forEach((order,index)=>{
+      if(!order.coordinates)return
+      points.push(order.coordinates)
+      const selected=selectedOrder?.id===order.id
+      const icon=L.divIcon({className:`leaflet-order-icon ${selected?'selected':''}`,html:`<span><b>${index+1}</b></span>`,iconSize:[38,38],iconAnchor:[19,38]})
+      L.marker(order.coordinates,{icon}).addTo(orderLayer.current).bindTooltip(`#${order.id} · ${order.customer}`).on('click',()=>onSelect(order.id))
+    })
+    if(!location&&points.length)map.fitBounds(L.latLngBounds(points).pad(.18),{maxZoom:14})
+  },[orders,selectedOrder,location,onSelect])
+
+  useEffect(()=>{
+    const map=mapInstance.current
+    if(!map)return
+    if(routeLayer.current)routeLayer.current.remove()
+    const routePoints=[]
+    if(location)routePoints.push([location.lat,location.lng])
+    orders.filter(order=>order.coordinates).forEach(order=>routePoints.push(order.coordinates))
+    if(routePoints.length>1)routeLayer.current=L.polyline(routePoints,{color:'#ff5a1f',weight:5,opacity:.78,dashArray:'10 10'}).addTo(map)
+  },[orders,location])
+
+  const centerLocation=()=>mapInstance.current?.locate({setView:true,maxZoom:16,enableHighAccuracy:true})
+  const centerDestination=()=>selectedOrder?.coordinates&&mapInstance.current?.setView(selectedOrder.coordinates,16)
+  return <div className="real-map-shell"><div className="real-map-search"><Navigation/><div><small>DESTINO SELECCIONADO</small><b>{selectedOrder?.address||'Selecciona una entrega'}</b></div></div><div ref={mapElement} className="leaflet-delivery-map"/><div className="real-map-status"><div><span className={location?'gps-live':'gps-off'}><Crosshair/></span><div><small>{locationStatus}</small><b>{location?`${location.lat.toFixed(5)}, ${location.lng.toFixed(5)} · ±${Math.round(location.accuracy)} m`:'Centro inicial: Tijuana, B.C.'}</b>{location&&<em>Actualizado {location.updatedAt}</em>}</div></div><div className="real-map-actions"><button onClick={centerLocation}><LocateFixed/> Mi ubicación</button><button onClick={centerDestination} disabled={!selectedOrder}><MapPin/> Ver destino</button>{selectedOrder&&<a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.address)}`} target="_blank" rel="noreferrer"><Navigation/> Navegar</a>}</div></div></div>
+}
+
 function DriverView({store}) {
   const [tab,setTab]=useState('Por entregar')
-  const [location,setLocation]=useState(null)
-  const [locationStatus,setLocationStatus]=useState('Ubicación desactivada')
   const [selectedStop,setSelectedStop]=useState(null)
-  const [mapZoom,setMapZoom]=useState(1)
-  const locationWatch=useRef(null)
   const deliveryOrders=store.orders.filter(o=>isDeliveryOrder(o)&&(o.driver==='Roberto Gómez'||o.status==='En cocina'))
   const activeOrders=deliveryOrders.filter(o=>['En cocina','Listo','Asignado','En ruta'].includes(o.status))
   const history=deliveryOrders.filter(o=>o.status==='Entregado')
   const positions=[['24%','24%'],['67%','19%'],['77%','61%'],['38%','70%'],['53%','43%']]
   const selectedOrder=activeOrders.find(order=>order.id===selectedStop)||activeOrders.find(order=>order.status==='En ruta')||activeOrders[0]
-  const startLocation=()=>{
-    if(!navigator.geolocation){setLocationStatus('Ubicación no disponible');return}
-    if(locationWatch.current!==null)navigator.geolocation.clearWatch(locationWatch.current)
-    setLocationStatus('Buscando ubicación…')
-    locationWatch.current=navigator.geolocation.watchPosition(position=>{setLocation({lat:position.coords.latitude,lng:position.coords.longitude,accuracy:position.coords.accuracy,updatedAt:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});setLocationStatus('Ubicación en tiempo real activa')},()=>setLocationStatus('Permiso de ubicación denegado'),{enableHighAccuracy:true,maximumAge:5000,timeout:15000})
-  }
-  useEffect(()=>()=>{if(locationWatch.current!==null)navigator.geolocation.clearWatch(locationWatch.current)},[])
   const advance=order=>{
     if(order.status==='En cocina')return
     const status=['Listo','Asignado'].includes(order.status)?'En ruta':'Entregado'
@@ -304,7 +354,7 @@ function DriverView({store}) {
   return <main className="driver-view driver-portal"><section className="driver-top"><div><span className="eyebrow">Servicio a domicilio · Turno activo</span><h1>Portal repartidor</h1><p>Hola, Roberto. Tienes {activeOrders.length} servicios por completar.</p></div><div className="driver-score"><Star fill="currentColor"/><b>4.96</b><small>Calificación</small></div></section>
     <nav className="driver-nav">{[['Por entregar',PackageCheck],['Ruta en mapa',Navigation],['Historial',History]].map(([label,Icon])=><button key={label} className={tab===label?'active':''} onClick={()=>setTab(label)}><Icon/> {label}{label==='Por entregar'&&<span>{activeOrders.length}</span>}</button>)}</nav>
     {tab==='Por entregar'&&<section className="delivery-queue"><div className="queue-heading"><div><small>DOMICILIO</small><h2>Lista de entregas</h2></div><div className="queue-counters"><span><i className="cooking"/> En cocina {activeOrders.filter(o=>o.status==='En cocina').length}</span><span><i className="route"/> En ruta {activeOrders.filter(o=>o.status==='En ruta').length}</span><span><i className="ready"/> Asignados {activeOrders.filter(o=>['Listo','Asignado'].includes(o.status)).length}</span></div></div>{activeOrders.length===0?<Empty text="No tienes entregas pendientes"/>:<div className="delivery-cards">{activeOrders.map((order,index)=><article key={order.id}><div className="delivery-card-head"><div><small>#{order.id}</small><h3>{order.customer}</h3></div><span className={`status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</span></div><div className="address-preview"><div className="mini-map"><span style={{left:positions[index%positions.length][0],top:positions[index%positions.length][1]}}><MapPin/></span></div><p><MapPin/> {order.address}</p></div><div className="delivery-meta"><span><PackageCheck/> {lineText(order)}</span><b>{money(order.total)}</b></div><div className="delivery-actions"><a href={`tel:${order.phone}`}><Phone/> Llamar</a><a href={`sms:${order.phone}`}><MessageCircle/> Contactar</a><a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.address)}`} target="_blank" rel="noreferrer"><Navigation/> Navegar</a></div>{order.status!=='En cocina'&&<button className="primary wide" onClick={()=>advance(order)}>{order.status==='En ruta'?'Confirmar entrega':'Iniciar ruta'} <ArrowRight/></button>}</article>)}</div>}</section>}
-    {tab==='Ruta en mapa'&&<section className="driver-route-layout"><div className="map-card route-map"><div className="map-ui" style={{backgroundSize:`${80*mapZoom}px ${140*mapZoom}px`}}><div className="map-search-bar"><Navigation/><div><small>DESTINO ACTUAL</small><b>{selectedOrder?.address||'Sin destino seleccionado'}</b></div></div><div className="route-line"/><span className="pin restaurant"><Store/></span>{activeOrders.map((order,index)=><button className={`delivery-pin ${selectedOrder?.id===order.id?'selected':''}`} key={order.id} onClick={()=>setSelectedStop(order.id)} style={{left:positions[index%positions.length][0],top:positions[index%positions.length][1]}} title={order.address}><MapPin/><b>{index+1}</b><small>#{order.id}</small></button>)}{location?<span className="live-driver-pin" style={{left:`${45+(Math.abs(location.lng)*10)%12}%`,top:`${42+(Math.abs(location.lat)*10)%12}%`}}><Crosshair/><i/></span>:<span className="rider">🛵</span>}<div className="map-controls"><button onClick={()=>setMapZoom(value=>Math.min(2,value+.25))} aria-label="Acercar mapa">+</button><button onClick={()=>setMapZoom(value=>Math.max(.75,value-.25))} aria-label="Alejar mapa">−</button><button className={location?'tracking':''} onClick={startLocation} aria-label="Usar mi ubicación"><LocateFixed/></button></div><div className="map-label">{activeOrders.length} paradas · Zoom {Math.round(mapZoom*100)}%</div>{location&&<div className="live-location-card"><span><i/> EN VIVO</span><b>{location.lat.toFixed(5)}, {location.lng.toFixed(5)}</b><small>Precisión ±{Math.round(location.accuracy)} m · {location.updatedAt}</small></div>}</div><div className="map-navigation-bar"><div><LocateFixed/><span><small>{locationStatus}</small><b>{selectedOrder?`Siguiente: ${selectedOrder.customer}`:'Activa tu ubicación para iniciar'}</b></span></div><button onClick={startLocation}>{location?'Centrar en mi ubicación':'Activar ubicación en tiempo real'}</button>{selectedOrder&&<a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.address)}`} target="_blank" rel="noreferrer"><Navigation/> Abrir navegación</a>}</div></div><aside className="route-stops"><small>ORDEN DE ENTREGA</small><h2>Paradas de la ruta</h2>{activeOrders.map((order,index)=><button className={selectedOrder?.id===order.id?'selected':''} key={order.id} onClick={()=>setSelectedStop(order.id)}><span>{index+1}</span><div><b>{order.customer}</b><small>{order.address}</small></div><strong className={`status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</strong></button>)}</aside></section>}
+    {tab==='Ruta en mapa'&&<section className="driver-route-layout"><div className="map-card route-map"><RealDeliveryMap orders={activeOrders} selectedOrder={selectedOrder} onSelect={setSelectedStop}/></div><aside className="route-stops"><small>ORDEN DE ENTREGA</small><h2>Paradas de la ruta</h2>{activeOrders.map((order,index)=><button className={selectedOrder?.id===order.id?'selected':''} key={order.id} onClick={()=>setSelectedStop(order.id)}><span>{index+1}</span><div><b>{order.customer}</b><small>{order.address}</small></div><strong className={`status ${order.status.toLowerCase().replaceAll(' ','-')}`}>{order.status}</strong></button>)}</aside></section>}
     {tab==='Historial'&&<section className="dash-card driver-history"><div className="card-title"><div><small>Servicios completados</small><h2>Historial de entregas</h2></div><b>{history.length} entregas</b></div>{history.length===0?<Empty text="Todavía no hay entregas completadas"/>:history.map(order=><article key={order.id}><span><Check/></span><div><b>#{order.id} · {order.customer}</b><small><MapPin/> {order.address}</small></div><strong>{money(order.total)}</strong><span className="status entregado">Entregado</span></article>)}</section>}
   </main>
 }

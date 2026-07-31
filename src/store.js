@@ -32,9 +32,12 @@ const initialState = {
     { id: 3, name: 'Ana Torres', phone: '33 8811 2299', address: 'López Cotilla 950, Americana', orders: 8, total: 2650 },
   ],
   orders: [
-    { id: 'FG-1048', customer: 'Valeria Soto', phone: '33 1234 5678', address: 'Av. Reforma 214, Centro', lines: [{ id: 2, name: 'Smash fuego', qty: 2, price: 145 }, { id: 5, name: 'Horchata rosa', qty: 1, price: 52 }], total: 381, payment: 'Tarjeta', paid: true, status: 'En cocina', createdAt: '12:18', createdHour: 12, driver: '' },
-    { id: 'FG-1047', customer: 'Marco Luna', phone: '33 7654 1122', address: 'Calle Olivo 88, Moderna', lines: [{ id: 3, name: 'Pizza mexicana', qty: 1, price: 210 }, { id: 5, name: 'Horchata rosa', qty: 2, price: 52 }], total: 353, payment: 'Efectivo', paid: false, status: 'Listo', createdAt: '12:07', createdHour: 12, driver: 'Roberto Gómez' },
-    { id: 'FG-1046', customer: 'Ana Torres', phone: '33 8811 2299', address: 'López Cotilla 950, Americana', lines: [{ id: 1, name: 'Tacos al pastor', qty: 3, price: 95 }, { id: 6, name: 'Flan de la casa', qty: 1, price: 62 }], total: 386, payment: 'Tarjeta', paid: true, status: 'En ruta', createdAt: '11:52', createdHour: 11, driver: 'Roberto Gómez' },
+    { id: 'FG-1048', customer: 'Valeria Soto', phone: '664 123 5678', address: 'Blvd. Cucapah 21907-Interior 220, Villafontana, Lomas del Matamoros, 22206 Tijuana, B.C.', coordinates: [32.4965,-116.9145], serviceType: 'Domicilio', lines: [{ id: 2, name: 'Smash fuego', qty: 2, price: 145 }, { id: 5, name: 'Horchata rosa', qty: 1, price: 52 }], total: 381, payment: 'Tarjeta', paid: true, status: 'En cocina', createdAt: '12:18', createdHour: 12, driver: 'Roberto Gómez' },
+    { id: 'FG-1047', customer: 'Marco Luna', phone: '664 765 1122', address: 'Veracruz & Del Cubilete, El Pipila, 22206 Tijuana, B.C.', coordinates: [32.4975,-116.8970], serviceType: 'Domicilio', lines: [{ id: 3, name: 'Pizza mexicana', qty: 1, price: 210 }, { id: 5, name: 'Horchata rosa', qty: 2, price: 52 }], total: 353, payment: 'Efectivo', paid: false, status: 'Listo', createdAt: '12:07', createdHour: 12, driver: 'Roberto Gómez' },
+    { id: 'FG-1046', customer: 'Ana Torres', phone: '664 881 2299', address: 'Blvd. Gustavo Aubanel Vallejo 9058, Cacho, 22414 Tijuana, B.C.', coordinates: [32.5209,-117.0278], serviceType: 'Domicilio', lines: [{ id: 1, name: 'Tacos al pastor', qty: 3, price: 35 }, { id: 6, name: 'Flan de la casa', qty: 1, price: 62 }], total: 206, payment: 'Tarjeta', paid: true, status: 'En ruta', createdAt: '11:52', createdHour: 11, driver: 'Roberto Gómez' },
+    { id: 'FG-1045', customer: 'Sofía Ramírez', phone: '664 310 2840', address: 'Calle Tabasco 2040, Cacho, 22414 Tijuana, B.C.', coordinates: [32.5196,-117.0248], serviceType: 'Domicilio', lines: [{ id: 7, name: 'Chiles rellenos', qty: 1, price: 150 }], total: 189, payment: 'Efectivo', paid: false, status: 'Asignado', createdAt: '11:34', createdHour: 11, driver: 'Roberto Gómez' },
+    { id: 'FG-1044', customer: 'Daniel Ortega', phone: '664 222 7810', address: 'Plaza Mariana, Ruta Independencia 23696-4, Mariano Matamoros, 22206 Tijuana, B.C.', coordinates: [32.5005,-116.8735], serviceType: 'Domicilio', lines: [{ id: 8, name: 'Tamales', qty: 1, price: 130 }], total: 169, payment: 'Tarjeta', paid: true, status: 'Listo', createdAt: '11:20', createdHour: 11, driver: 'Roberto Gómez' },
+    { id: 'FG-1043', customer: 'Elena Castro', phone: '664 542 9031', address: 'Av de La Joya 990, Matamoros Norte-Centro-Sur, Las Américas, 22215 Tijuana, B.C.', coordinates: [32.4885,-116.8855], serviceType: 'Domicilio', lines: [{ id: 4, name: 'Bowl del huerto', qty: 1, price: 125 }, { id: 5, name: 'Horchata rosa', qty: 1, price: 52 }], total: 216, payment: 'Efectivo', paid: false, status: 'En cocina', createdAt: '11:05', createdHour: 11, driver: 'Roberto Gómez' },
   ],
 }
 
@@ -54,9 +57,14 @@ export function useRestaurantStore() {
         station: product.station || (['Bebidas','Postres','Especiales'].includes(product.category) ? 'Barra' : 'Cocina'),
         deliveryEnabled: product.deliveryEnabled !== false,
       }))
-      const orders = (parsed.orders || initialState.orders).map(order => order.serviceType === 'En el lugar'
-        ? { ...order, serviceType: 'Para llevar', address: 'Recoge en sucursal' }
-        : order)
+      const demoLocations = Object.fromEntries(initialState.orders.map(order => [order.id, order]))
+      const orders = (parsed.orders || initialState.orders).map(order => {
+        const migrated = order.serviceType === 'En el lugar' ? { ...order, serviceType: 'Para llevar', address: 'Recoge en sucursal' } : order
+        return demoLocations[order.id] ? { ...migrated, address: demoLocations[order.id].address, coordinates: demoLocations[order.id].coordinates, serviceType: 'Domicilio', phone: demoLocations[order.id].phone, lines: demoLocations[order.id].lines, total: demoLocations[order.id].total } : migrated
+      })
+      initialState.orders.forEach(order => {
+        if (!orders.some(savedOrder => savedOrder.id === order.id)) orders.push(order)
+      })
       return { ...initialState, ...parsed, products, orders, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
     } catch {
       return initialState
