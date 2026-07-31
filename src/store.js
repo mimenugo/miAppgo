@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react'
 const KEY = 'fuego-operations-v2'
 
 export const seedProducts = [
-  { id: 1, name: 'Tacos al pastor', desc: 'Piña asada, cebolla, cilantro y salsa tatemada.', price: 95, category: 'Tacos', station: 'Cocina', emoji: '🌮', tone: 'coral', active: true },
-  { id: 2, name: 'Smash fuego', desc: 'Doble carne, cheddar, cebolla caramelizada y papas.', price: 145, category: 'Hamburguesas', station: 'Cocina', emoji: '🍔', tone: 'amber', active: true },
-  { id: 3, name: 'Pizza mexicana', desc: 'Chorizo, jalapeño, cebolla morada y queso gratinado.', price: 210, category: 'Pizzas', station: 'Cocina', emoji: '🍕', tone: 'red', active: true },
-  { id: 4, name: 'Bowl del huerto', desc: 'Arroz, vegetales asados, aguacate y aderezo cítrico.', price: 125, category: 'Especiales', station: 'Barra', emoji: '🥗', tone: 'green', active: true },
-  { id: 5, name: 'Horchata rosa', desc: 'Horchata artesanal con fresa natural. 1 litro.', price: 52, category: 'Bebidas', station: 'Barra', emoji: '🥤', tone: 'pink', active: true },
-  { id: 6, name: 'Flan de la casa', desc: 'Cremoso, con caramelo de naranja y vainilla.', price: 62, category: 'Postres', station: 'Barra', emoji: '🍮', tone: 'gold', active: true },
+  { id: 1, name: 'Tacos al pastor', desc: 'Piña asada, cebolla, cilantro y salsa tatemada.', price: 95, category: 'Tacos', station: 'Cocina', deliveryEnabled: true, emoji: '🌮', tone: 'coral', active: true },
+  { id: 2, name: 'Smash fuego', desc: 'Doble carne, cheddar, cebolla caramelizada y papas.', price: 145, category: 'Hamburguesas', station: 'Cocina', deliveryEnabled: true, emoji: '🍔', tone: 'amber', active: true },
+  { id: 3, name: 'Pizza mexicana', desc: 'Chorizo, jalapeño, cebolla morada y queso gratinado.', price: 210, category: 'Pizzas', station: 'Cocina', deliveryEnabled: true, emoji: '🍕', tone: 'red', active: true },
+  { id: 4, name: 'Bowl del huerto', desc: 'Arroz, vegetales asados, aguacate y aderezo cítrico.', price: 125, category: 'Especiales', station: 'Barra', deliveryEnabled: true, emoji: '🥗', tone: 'green', active: true },
+  { id: 5, name: 'Horchata rosa', desc: 'Horchata artesanal con fresa natural. 1 litro.', price: 52, category: 'Bebidas', station: 'Barra', deliveryEnabled: true, emoji: '🥤', tone: 'pink', active: true },
+  { id: 6, name: 'Flan de la casa', desc: 'Cremoso, con caramelo de naranja y vainilla.', price: 62, category: 'Postres', station: 'Barra', deliveryEnabled: true, emoji: '🍮', tone: 'gold', active: true },
 ]
 
 const initialState = {
@@ -45,6 +45,7 @@ export function useRestaurantStore() {
       const products = (parsed.products || initialState.products).map(product => ({
         ...product,
         station: product.station || (['Bebidas','Postres','Especiales'].includes(product.category) ? 'Barra' : 'Cocina'),
+        deliveryEnabled: product.deliveryEnabled !== false,
       }))
       return { ...initialState, ...parsed, products, cashRegister: { ...initialState.cashRegister, ...(parsed.cashRegister || {}) } }
     } catch {
@@ -65,7 +66,8 @@ export function useRestaurantStore() {
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     const hasKitchen = payload.lines.some(line => (line.station || 'Cocina') === 'Cocina')
     const hasBar = payload.lines.some(line => line.station === 'Barra')
-    const order = { ...payload, id: `FG-${maxId + 1}`, createdAt: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), createdDate: localDate, createdHour: now.getHours(), status: hasKitchen ? 'Nuevo' : 'En barra', barStatus: hasBar ? 'Pendiente' : 'No aplica', driver: '' }
+    const serviceType = payload.serviceType || (payload.address === 'Recoge en sucursal' ? 'Para llevar' : 'Domicilio')
+    const order = { ...payload, serviceType, id: `FG-${maxId + 1}`, createdAt: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), createdDate: localDate, createdHour: now.getHours(), status: hasKitchen ? 'Nuevo' : 'En barra', barStatus: hasBar ? 'Pendiente' : 'No aplica', driver: '' }
     setData(current => {
       const known = current.customers.find(customer => customer.phone === payload.phone)
       const customers = known
