@@ -72,3 +72,7 @@ npm.cmd run dev -- --port 4174
 - Persistencia: productos, clientes, pedidos, caja, configuración, cocina y reparto se consultan y actualizan mediante `/api`.
 
 Los archivos locales `server/.env`, credenciales, cargas y respaldos no deben publicarse. Para producción configura un secreto JWT robusto, un usuario MySQL restringido, HTTPS, almacenamiento de archivos y respaldos automáticos.
+
+## Publicar en Railway
+
+El repositorio incluye `Dockerfile`, `railway.json` y un iniciador Linux que compila la PWA, ejecuta las migraciones y levanta la API. Sigue la guía [docs/railway-deployment.md](docs/railway-deployment.md).

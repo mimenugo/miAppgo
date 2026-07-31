@@ -4,23 +4,26 @@ import cors from 'cors'
 import mysql from 'mysql2/promise'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 
 const rootDirectory=dirname(fileURLToPath(import.meta.url))
 const uploadDirectory=join(rootDirectory,'uploads')
+const publicDirectory=join(rootDirectory,'..','dist')
 await mkdir(uploadDirectory,{recursive:true})
 
 const pool=mysql.createPool({
-  host:process.env.DB_HOST||'127.0.0.1',port:Number(process.env.DB_PORT||3306),
-  user:process.env.DB_USER||'root',password:process.env.DB_PASSWORD||'',database:process.env.DB_NAME||'gastro_suite',
+  host:process.env.DB_HOST||process.env.MYSQLHOST||'127.0.0.1',port:Number(process.env.DB_PORT||process.env.MYSQLPORT||3306),
+  user:process.env.DB_USER||process.env.MYSQLUSER||'root',password:process.env.DB_PASSWORD||process.env.MYSQLPASSWORD||'',database:process.env.DB_NAME||process.env.MYSQLDATABASE||'gastro_suite',
   waitForConnections:true,connectionLimit:10,timezone:'Z',decimalNumbers:true,charset:'utf8mb4',
 })
 
 const app=express()
-app.use(cors({origin:(process.env.FRONTEND_ORIGIN||'http://localhost:4174').split(',')}))
+const allowedOrigins=(process.env.FRONTEND_ORIGIN||'http://localhost:4174').split(',').map(value=>value.trim()).filter(Boolean)
+if(process.env.RAILWAY_PUBLIC_DOMAIN)allowedOrigins.push(`https://${process.env.RAILWAY_PUBLIC_DOMAIN}`)
+app.use(cors({origin:(origin,callback)=>!origin||allowedOrigins.includes(origin)?callback(null,true):callback(new Error('Origen no permitido por CORS.'))}))
 app.use(express.json({limit:'5mb'}))
 app.use('/uploads',express.static(uploadDirectory))
 
@@ -206,6 +209,14 @@ app.put('/api/settings/business',authenticate,allow('administrator'),async(req,r
 app.post('/api/cash/open',authenticate,allow('administrator','cashier'),async(req,res,next)=>{try{const business=await businessData();await pool.execute(`INSERT INTO cash_register_shifts(branch_id,opened_by_user_id,opening_amount,status) VALUES(?,?,?,'open')`,[business.branchId,req.auth.sub,Number(req.body.openingAmount)]);res.json(await cashData())}catch(error){next(error)}})
 app.post('/api/cash/movements',authenticate,allow('administrator','cashier'),async(req,res,next)=>{try{const [[shift]]=await pool.query("SELECT id FROM cash_register_shifts WHERE status='open' ORDER BY id DESC LIMIT 1");if(!shift)return res.status(409).json({error:'No hay una caja abierta.'});await pool.execute('INSERT INTO cash_movements(cash_register_shift_id,user_id,movement_type,amount,concept) VALUES(?,?,?,?,?)',[shift.id,req.auth.sub,req.body.type==='Retiro'?'withdrawal':'income',Number(req.body.amount),req.body.concept]);res.json(await cashData())}catch(error){next(error)}})
 app.post('/api/cash/close',authenticate,allow('administrator','cashier'),async(req,res,next)=>{try{const [[shift]]=await pool.query("SELECT id FROM cash_register_shifts WHERE status='open' ORDER BY id DESC LIMIT 1");if(!shift)return res.status(409).json({error:'No hay una caja abierta.'});await pool.execute(`UPDATE cash_register_shifts SET status='closed',closed_by_user_id=?,expected_amount=?,counted_amount=?,difference_amount=?,closing_notes=?,closed_at=UTC_TIMESTAMP(3) WHERE id=?`,[req.auth.sub,req.body.expected,req.body.counted,req.body.difference,req.body.note||'',shift.id]);res.json(await cashData())}catch(error){next(error)}})
+
+try{
+  await access(join(publicDirectory,'index.html'))
+  app.use(express.static(publicDirectory))
+  app.use((req,res,next)=>req.method==='GET'&&!req.path.startsWith('/api/')&&!req.path.startsWith('/uploads/')?res.sendFile(join(publicDirectory,'index.html')):next())
+}catch{
+  console.warn('Frontend compilado no encontrado; la API continuará disponible.')
+}
 
 app.use((error,req,res,next)=>{console.error(error);res.status(error.code==='ER_DUP_ENTRY'?409:500).json({error:error.message||'Error interno del servidor.'})})
 

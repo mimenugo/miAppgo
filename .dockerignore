@@ -1,0 +1,12 @@
+.git
+.github
+.projects
+.npm-cache
+.tools
+node_modules
+server/node_modules
+dist
+server/.env
+server/uploads/*
+gastro-suite.rar
+*.log
