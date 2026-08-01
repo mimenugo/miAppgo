@@ -18,8 +18,8 @@ echo "Esperando la conexión con MySQL..."
 attempt=0
 until mysql $mysql_args --execute="SELECT 1" >/dev/null 2>&1; do
   attempt=$((attempt + 1))
-  if [ "$attempt" -ge 30 ]; then
-    echo "No fue posible conectar con MySQL después de 60 segundos." >&2
+  if [ "$attempt" -ge 90 ]; then
+    echo "No fue posible conectar con MySQL después de 180 segundos. Revisa las referencias MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQLPASSWORD y MYSQLDATABASE en el servicio de Gastro Suite." >&2
     exit 1
   fi
   sleep 2

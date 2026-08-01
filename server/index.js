@@ -136,7 +136,8 @@ async function saveImage(dataUrl){
   return `/uploads/${fileName}`
 }
 
-app.get('/api/health',async(req,res,next)=>{try{await pool.query('SELECT 1');res.json({ok:true,database:'gastro_suite'})}catch(error){next(error)}})
+app.get('/api/health',(req,res)=>res.status(200).json({ok:true,service:'gastro-suite-api'}))
+app.get('/api/readiness',async(req,res,next)=>{try{await pool.query('SELECT 1');res.json({ok:true,database:process.env.DB_NAME||process.env.MYSQLDATABASE||'gastro_suite'})}catch(error){next(error)}})
 app.get('/api/public/bootstrap',async(req,res,next)=>{try{res.json(await bootstrap(`${req.protocol}://${req.get('host')}`,false))}catch(error){next(error)}})
 
 app.post('/api/auth/login',async(req,res,next)=>{try{
@@ -221,4 +222,4 @@ try{
 app.use((error,req,res,next)=>{console.error(error);res.status(error.code==='ER_DUP_ENTRY'?409:500).json({error:error.message||'Error interno del servidor.'})})
 
 const port=Number(process.env.PORT||3001)
-app.listen(port,()=>console.log(`Gastro Suite API disponible en http://localhost:${port}`))
+app.listen(port,'0.0.0.0',()=>console.log(`Gastro Suite API disponible en 0.0.0.0:${port}`))

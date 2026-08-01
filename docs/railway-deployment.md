@@ -59,6 +59,12 @@ https://TU-DOMINIO.railway.app/
 
 El endpoint de salud debe responder con `ok: true` y `database` debe mostrar el nombre de la base conectada.
 
+Para comprobar también la conexión con MySQL utiliza:
+
+```text
+https://TU-DOMINIO.railway.app/api/readiness
+```
+
 Acceso inicial de pruebas:
 
 ```text
