@@ -18,6 +18,7 @@ RUN npm ci --omit=dev --prefix server
 COPY server ./server
 COPY database ./database
 COPY railway-start.sh ./railway-start.sh
+COPY railway-migrate.sh ./railway-migrate.sh
 COPY --from=frontend /app/dist ./dist
 RUN mkdir -p /app/server/uploads && chown -R node:node /app
 EXPOSE 3001

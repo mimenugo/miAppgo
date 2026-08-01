@@ -5,6 +5,8 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
+    "preDeployCommand": "sh railway-migrate.sh",
+    "startCommand": "sh railway-start.sh",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

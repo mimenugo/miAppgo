@@ -10,7 +10,7 @@ En el proyecto de Railway:
 2. Selecciona **Database** y después **MySQL**.
 3. Espera hasta que el servicio indique que está activo.
 
-No ejecutes manualmente los archivos SQL. El contenedor espera a MySQL y aplica las migraciones automáticamente en cada despliegue; las que ya estén registradas no se repiten.
+No ejecutes manualmente los archivos SQL. Railway ejecuta `railway-migrate.sh` en la fase Pre-Deploy; las migraciones que ya estén registradas no se repiten. Si falta una referencia MySQL, el despliegue se detendrá en esta fase con el nombre de la variable faltante, antes del healthcheck.
 
 ## 2. Configurar el servicio conectado a GitHub
 
