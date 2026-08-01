@@ -11,6 +11,8 @@ import {
 import { useRestaurantStore } from './store'
 
 const money = value => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
+const readLocal=key=>{try{return globalThis.localStorage?.getItem(key)||''}catch{return ''}}
+const writeLocal=(key,value)=>{try{globalThis.localStorage?.setItem(key,value)}catch{/* El navegador puede bloquear el almacenamiento. */}}
 const pizzaSizeAdjustments = { Chica: -40, Mediana: 0, Grande: 70 }
 const pizzaPrice = (basePrice, size) => Math.max(0, Number(basePrice) + (pizzaSizeAdjustments[size] || 0))
 const lineText = order => order.lines.map(line => `${line.qty} ${line.name}${line.size ? ` · ${line.size}` : ''}${line.note ? ` (${line.note})` : ''}`).join(' · ')
@@ -545,9 +547,9 @@ function Empty({text}){return <div className="empty compact-empty"><ShoppingBag/
 
 export default function App(){
   const store=useRestaurantStore()
-  const savedRole=localStorage.getItem('fuego-active-role')
+  const savedRole=readLocal('fuego-active-role')
   const [role,setRoleState]=useState(savedRole||'cliente'),[sessionOpen,setSessionOpen]=useState(!savedRole||(savedRole!=='cliente'&&!store.token)),[cart,setCart]=useState([]),[showCart,setShowCart]=useState(false)
-  const setRole=nextRole=>{localStorage.setItem('fuego-active-role',nextRole);setRoleState(nextRole)}
+  const setRole=nextRole=>{writeLocal('fuego-active-role',nextRole);setRoleState(nextRole)}
   useEffect(()=>{document.title=`${store.business.brandName} · Pedidos y POS`},[store.business.brandName])
   useEffect(()=>{if(role!=='cliente'&&!store.token)setSessionOpen(true)},[role,store.token])
   const cartCount=useMemo(()=>cart.reduce((n,row)=>n+row.qty,0),[cart])

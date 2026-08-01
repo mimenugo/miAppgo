@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 
 const API_BASE=import.meta.env.VITE_API_URL||'/api'
+const readSession=key=>{try{return globalThis.sessionStorage?.getItem(key)||''}catch{return ''}}
+const writeSession=(key,value)=>{try{globalThis.sessionStorage?.setItem(key,value)}catch{/* El navegador puede bloquear el almacenamiento. */}}
+const removeSession=key=>{try{globalThis.sessionStorage?.removeItem(key)}catch{/* El navegador puede bloquear el almacenamiento. */}}
 const emptyData={
   business:{brandName:'Gastro Suite',restaurantName:'Gastro Suite',branchName:'Sucursal principal',address:'',phone:'',email:'',logoUrl:'',timezone:'America/Tijuana'},
   products:[],orders:[],customers:[],
@@ -17,19 +20,19 @@ async function apiRequest(path,{token,method='GET',body}={}){
 
 export function useRestaurantStore(){
   const [data,setData]=useState(emptyData)
-  const [token,setToken]=useState(()=>sessionStorage.getItem('gastro-suite-token')||'')
-  const [currentUser,setCurrentUser]=useState(()=>{try{return JSON.parse(sessionStorage.getItem('gastro-suite-user')||'null')}catch{return null}})
+  const [token,setToken]=useState(()=>readSession('gastro-suite-token'))
+  const [currentUser,setCurrentUser]=useState(()=>{try{return JSON.parse(readSession('gastro-suite-user')||'null')}catch{return null}})
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
 
   const loadPublic=useCallback(async()=>{const payload=await apiRequest('/public/bootstrap');setData(current=>({...current,...payload}))},[])
   const loadPrivate=useCallback(async activeToken=>{const payload=await apiRequest('/bootstrap',{token:activeToken});setData(current=>({...current,...payload}))},[])
-  const refresh=useCallback(async()=>{setError('');try{if(token)await loadPrivate(token);else await loadPublic()}catch(err){setError(err.message);if(token){sessionStorage.removeItem('gastro-suite-token');sessionStorage.removeItem('gastro-suite-user');setToken('');setCurrentUser(null);await loadPublic()}}finally{setLoading(false)}},[token,loadPrivate,loadPublic])
+  const refresh=useCallback(async()=>{setError('');try{if(token)await loadPrivate(token);else await loadPublic()}catch(err){setError(err.message);if(token){removeSession('gastro-suite-token');removeSession('gastro-suite-user');setToken('');setCurrentUser(null);await loadPublic()}}finally{setLoading(false)}},[token,loadPrivate,loadPublic])
 
   useEffect(()=>{refresh()},[refresh])
 
-  const login=async(email,password)=>{const result=await apiRequest('/auth/login',{method:'POST',body:{email,password}});sessionStorage.setItem('gastro-suite-token',result.token);sessionStorage.setItem('gastro-suite-user',JSON.stringify(result.user));setToken(result.token);setCurrentUser(result.user);await loadPrivate(result.token);return result.user}
-  const logout=async()=>{sessionStorage.removeItem('gastro-suite-token');sessionStorage.removeItem('gastro-suite-user');setToken('');setCurrentUser(null);setData(emptyData);await loadPublic()}
+  const login=async(email,password)=>{const result=await apiRequest('/auth/login',{method:'POST',body:{email,password}});writeSession('gastro-suite-token',result.token);writeSession('gastro-suite-user',JSON.stringify(result.user));setToken(result.token);setCurrentUser(result.user);await loadPrivate(result.token);return result.user}
+  const logout=async()=>{removeSession('gastro-suite-token');removeSession('gastro-suite-user');setToken('');setCurrentUser(null);setData(emptyData);await loadPublic()}
 
   const createOrder=async payload=>{const order=await apiRequest('/orders',{token,method:'POST',body:payload});setData(current=>({...current,orders:[order,...current.orders.filter(item=>item.id!==order.id)]}));await loadPrivate(token).catch(()=>{});return order}
   const updateOrder=async(id,patch)=>{const order=await apiRequest(`/orders/${encodeURIComponent(id)}`,{token,method:'PATCH',body:patch});setData(current=>({...current,orders:current.orders.map(item=>item.id===id?order:item)}));return order}
