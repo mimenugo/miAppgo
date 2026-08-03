@@ -58,13 +58,14 @@ else
 fi
 
 mysql $mysql_args --execute="CREATE TABLE IF NOT EXISTS \`$db_name\`.schema_migrations (migration VARCHAR(190) PRIMARY KEY, applied_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)) ENGINE=InnoDB;"
-migration_name="005_migrate_demo_data.sql"
-applied="$(mysql $mysql_args --batch --skip-column-names --execute="SELECT COUNT(*) FROM \`$db_name\`.schema_migrations WHERE migration='$migration_name';")"
-if [ "$applied" = "0" ]; then
-  echo "Pre-Deploy: migrando los datos iniciales..."
-  run_migration "/app/database/mysql/$migration_name"
-  mysql $mysql_args --execute="INSERT INTO \`$db_name\`.schema_migrations(migration) VALUES('$migration_name');"
-fi
+for migration_name in 005_migrate_demo_data.sql 006_pos_business_rules.sql 007_delivery_state_integrity.sql; do
+  applied="$(mysql $mysql_args --batch --skip-column-names --execute="SELECT COUNT(*) FROM \`$db_name\`.schema_migrations WHERE migration='$migration_name';")"
+  if [ "$applied" = "0" ]; then
+    echo "Pre-Deploy: ejecutando $migration_name..."
+    run_migration "/app/database/mysql/$migration_name"
+    mysql $mysql_args --execute="INSERT INTO \`$db_name\`.schema_migrations(migration) VALUES('$migration_name');"
+  fi
+done
 
 unset MYSQL_PWD
 echo "Pre-Deploy: migraciones terminadas correctamente."

@@ -30,9 +30,16 @@ MYSQLPASSWORD=${{MySQL.MYSQLPASSWORD}}
 MYSQLDATABASE=${{MySQL.MYSQLDATABASE}}
 JWT_SECRET=coloca-aqui-un-valor-largo-aleatorio
 JWT_EXPIRES_IN=8h
+STRIPE_TEST_RESTRICTED_KEY=rk_test_...
+STRIPE_TEST_WEBHOOK_SECRET=whsec_...
+# Agrega estas dos únicamente al activar producción:
+STRIPE_LIVE_RESTRICTED_KEY=rk_live_...
+STRIPE_LIVE_WEBHOOK_SECRET=whsec_...
 ```
 
 No copies estas variables a GitHub ni las guardes en archivos del repositorio. Si Railway asignó otro nombre al servicio MySQL, sustituye `MySQL` por ese nombre en las referencias.
+
+En Stripe registra el webhook HTTPS `https://TU-DOMINIO.up.railway.app/api/webhooks/stripe` y habilita el evento `checkout.session.completed`. Conserva primero el ambiente de pruebas en Configuración > Pagos en línea.
 
 ## 3. Persistir imágenes
 
@@ -78,7 +85,7 @@ Cambia las contraseñas iniciales antes de recibir pedidos reales.
 
 Después de validar la rama temporal:
 
-1. Fusiona `codex/database-migration` en `main`.
+1. Publica la rama local `codex/pos-business-rules` y crea una solicitud de cambio hacia `main`.
 2. Cambia la rama desplegada por Railway a `main`.
 3. Activa respaldos del servicio MySQL.
 4. Configura alertas de consumo y errores.
