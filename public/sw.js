@@ -1,5 +1,16 @@
-const CACHE = 'fuego-pwa-v1'
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg']
+const CACHE = 'gastro-suite-pwa-v2'
+const APP_SHELL = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon.png',
+  './favicon-32x32.png',
+]
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)))
