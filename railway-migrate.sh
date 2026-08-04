@@ -58,7 +58,7 @@ else
 fi
 
 mysql $mysql_args --execute="CREATE TABLE IF NOT EXISTS \`$db_name\`.schema_migrations (migration VARCHAR(190) PRIMARY KEY, applied_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)) ENGINE=InnoDB;"
-for migration_name in 005_migrate_demo_data.sql 006_pos_business_rules.sql 007_delivery_state_integrity.sql; do
+for migration_name in 005_migrate_demo_data.sql 006_pos_business_rules.sql 007_delivery_state_integrity.sql 008_business_discovery_questionnaire.sql 009_marketing_portal_and_brand_refresh.sql; do
   applied="$(mysql $mysql_args --batch --skip-column-names --execute="SELECT COUNT(*) FROM \`$db_name\`.schema_migrations WHERE migration='$migration_name';")"
   if [ "$applied" = "0" ]; then
     echo "Pre-Deploy: ejecutando $migration_name..."

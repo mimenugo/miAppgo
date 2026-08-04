@@ -24,8 +24,8 @@ const removeSession = (key) => {
 };
 const emptyData = {
   business: {
-    brandName: "Gastro Suite",
-    restaurantName: "Gastro Suite",
+    brandName: "Mi Menu Suite",
+    restaurantName: "Mi Menu Suite",
     branchName: "Sucursal principal",
     address: "",
     phone: "",
@@ -44,7 +44,7 @@ const emptyData = {
     barPrinterEnabled: true,
     cashDrawerEnabled: true,
     cashDrawerCompatible: false,
-    accountHolder: "Gastro Suite",
+    accountHolder: "Mi Menu Suite",
     bank: "",
     accountNumber: "",
     clabe: "",
@@ -218,6 +218,15 @@ export function useRestaurantStore() {
     setData((current) => ({ ...current, business: saved }));
     return saved;
   };
+  const loadDiscoveryQuestions = async () => apiRequest("/discovery/questions", { token });
+  const loadDiscoverySubmissions = async () => apiRequest("/discovery/submissions", { token });
+  const loadDiscoverySubmission = async (id) => apiRequest(`/discovery/submissions/${encodeURIComponent(id)}`, { token });
+  const saveDiscoverySubmission = async (submission) =>
+    apiRequest("/discovery/submissions", {
+      token,
+      method: "POST",
+      body: submission,
+    });
   const openCashRegister = async (openingAmount, shiftName = "General") => {
     const cashRegister = await apiRequest("/cash/open", {
       token,
@@ -265,6 +274,10 @@ export function useRestaurantStore() {
     saveProduct,
     savePosSettings,
     saveBusiness,
+    loadDiscoveryQuestions,
+    loadDiscoverySubmissions,
+    loadDiscoverySubmission,
+    saveDiscoverySubmission,
     openCashRegister,
     addCashMovement,
     closeCashRegister,
