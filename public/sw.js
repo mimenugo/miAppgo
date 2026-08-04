@@ -1,4 +1,4 @@
-const CACHE = 'mi-menu-suite-pwa-v3'
+const CACHE = 'mi-menu-suite-pwa-v4'
 const APP_SHELL = [
   './',
   './index.html',
@@ -39,3 +39,4 @@ self.addEventListener('fetch', event => {
       .catch(() => caches.match(event.request).then(hit => hit || caches.match('./index.html')))
   )
 })
+
