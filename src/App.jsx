@@ -21,7 +21,7 @@ const writeLocal = (key, value) => {
 };
 const pizzaSizeAdjustments = { Chica: -40, Mediana: 0, Grande: 70 };
 const pizzaPrice = (basePrice, size) => Math.max(0, Number(basePrice) + (pizzaSizeAdjustments[size] || 0));
-const lineText = (order) => order.lines.map((line) => `${line.qty} ${line.name}${line.size ? ` Â· ${line.size}` : ""}${line.note ? ` (${line.note})` : ""}`).join(" Â· ");
+const lineText = (order) => order.lines.map((line) => `${line.qty} ${line.name}${line.size ? ` · ${line.size}` : ""}${line.note ? ` (${line.note})` : ""}`).join(" · ");
 const lineStation = (line, products) => line.station || products.find((product) => product.id === line.id)?.station || "Cocina";
 const lineInStation = (line, products, station) => {
   const assigned = lineStation(line, products);
@@ -48,10 +48,10 @@ const printAreaDocument = ({ title, printer, order, lines, type = "area", brand 
   frame.setAttribute("aria-hidden", "true");
   frame.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0";
   document.body.appendChild(frame);
-  const products = lines.map((line) => `<article><b>${line.qty}Ã— ${escapeHtml(line.name)}${line.size ? ` Â· ${escapeHtml(line.size)}` : ""}</b>${line.note ? `<strong>INDICACIÃ“N: ${escapeHtml(line.note)}</strong>` : ""}</article>`).join("");
+  const products = lines.map((line) => `<article><b>${line.qty}× ${escapeHtml(line.name)}${line.size ? ` · ${escapeHtml(line.size)}` : ""}</b>${line.note ? `<strong>INDICACIÓN: ${escapeHtml(line.note)}</strong>` : ""}</article>`).join("");
   const usd = settings.showUsdOnTicket && Number(settings.usdExchangeRate) > 0 ? `<small>USD aprox.: $${(Number(order.total) / Number(settings.usdExchangeRate)).toFixed(2)}</small>` : "";
   const detail = type === "sale" ? `<p class="total">TOTAL: ${escapeHtml(money(order.total))}</p>${usd}<p>Pago: ${escapeHtml(order.payment)}</p>` : "";
-  frame.contentDocument.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>@page{size:80mm auto;margin:4mm}body{font:12px monospace;color:#111}h1,h2,p{text-align:center;margin:5px 0}small{display:block;text-align:center}article{display:grid;gap:4px;padding:9px 0;border-bottom:1px dashed #555}article strong{font-size:11px}.meta{border-block:1px dashed #555;padding:8px;margin:10px 0}.total{font-size:17px;font-weight:900;border-top:2px solid #111;padding-top:10px}</style></head><body><h1>${escapeHtml(brand)}</h1><h2>${escapeHtml(title)}</h2><small>Impresora configurada: ${escapeHtml(printer)}</small><div class="meta"><b>#${escapeHtml(order.id)}</b><br>${escapeHtml(order.customer)} Â· ${escapeHtml(order.serviceType)}<br>${escapeHtml(order.scheduleLabel || "Ahora")}</div>${products}${detail}</body></html>`);
+  frame.contentDocument.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>@page{size:80mm auto;margin:4mm}body{font:12px monospace;color:#111}h1,h2,p{text-align:center;margin:5px 0}small{display:block;text-align:center}article{display:grid;gap:4px;padding:9px 0;border-bottom:1px dashed #555}article strong{font-size:11px}.meta{border-block:1px dashed #555;padding:8px;margin:10px 0}.total{font-size:17px;font-weight:900;border-top:2px solid #111;padding-top:10px}</style></head><body><h1>${escapeHtml(brand)}</h1><h2>${escapeHtml(title)}</h2><small>Impresora configurada: ${escapeHtml(printer)}</small><div class="meta"><b>#${escapeHtml(order.id)}</b><br>${escapeHtml(order.customer)} · ${escapeHtml(order.serviceType)}<br>${escapeHtml(order.scheduleLabel || "Ahora")}</div>${products}${detail}</body></html>`);
   frame.contentDocument.close();
   setTimeout(() => {
     frame.contentWindow.focus();
@@ -91,8 +91,8 @@ const updatePreparationArea = (store, order, area, next) => {
 };
 
 function notifyOrderByWhatsApp(order, brandName = "Mi Menu Suite") {
-  const products = order.lines.map((line) => `â€¢ ${line.qty} x ${line.name}${line.size ? ` (${line.size})` : ""}${line.note ? `\n  _Indicaciones: ${line.note}_` : ""} â€” ${money(line.price * line.qty)}`).join("\n");
-  const message = [`ðŸ”¥ *NUEVO PEDIDO ${brandName.toUpperCase()}*`, `*Folio:* #${order.id}`, `*Cliente:* ${order.customer}`, order.phone && order.phone !== "Mostrador" ? `*TelÃ©fono:* ${order.phone}` : "", order.serviceType === "Domicilio" && order.address ? `*DirecciÃ³n:* ${order.address}` : "", order.reference ? `*Referencia:* ${order.reference}` : "", "", "*Productos:*", products, "", `*Total:* ${money(order.total)}`, `*Pago:* ${order.payment}${order.payment === "Efectivo" && order.changeFor ? ` (paga con ${money(Number(order.changeFor))})` : ""}`].filter(Boolean).join("\n");
+  const products = order.lines.map((line) => `• ${line.qty} x ${line.name}${line.size ? ` (${line.size})` : ""}${line.note ? `\n  _Indicaciones: ${line.note}_` : ""} — ${money(line.price * line.qty)}`).join("\n");
+  const message = [`🔥 *NUEVO PEDIDO ${brandName.toUpperCase()}*`, `*Folio:* #${order.id}`, `*Cliente:* ${order.customer}`, order.phone && order.phone !== "Mostrador" ? `*TelÃ©fono:* ${order.phone}` : "", order.serviceType === "Domicilio" && order.address ? `*DirecciÃ³n:* ${order.address}` : "", order.reference ? `*Referencia:* ${order.reference}` : "", "", "*Productos:*", products, "", `*Total:* ${money(order.total)}`, `*Pago:* ${order.payment}${order.payment === "Efectivo" && order.changeFor ? ` (paga con ${money(Number(order.changeFor))})` : ""}`].filter(Boolean).join("\n");
   window.open(`https://wa.me/${WHATSAPP_TEST_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
 }
 
@@ -135,7 +135,7 @@ const roles = {
 };
 
 function ProductMedia({ product, className = "" }) {
-  return product.image ? <img className={`product-photo ${className}`} src={product.image} alt={product.name} /> : <span className={className}>{product.emoji || "ðŸ½ï¸"}</span>;
+  return product.image ? <img className={`product-photo ${className}`} src={product.image} alt={product.name} /> : <span className={className}>{product.emoji || "🍽️"}</span>;
 }
 
 function RolePicker({ role, openSessions }) {
@@ -329,24 +329,24 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSi
               </a>
               <span>
                 <Clock3 size={18} />
-                <b>25â€“35 min</b>
+                <b>25–35 min</b>
                 <small>tiempo estimado</small>
               </span>
             </div>
           </div>
           <div className="hero-art">
             <div className="dish">
-              ðŸŒ®<span>ðŸ”¥</span>
+              🌮<span>🔥</span>
             </div>
             <div className="float-card top">
-              <span>ðŸ›µ</span>
+              <span>🛵</span>
               <p>
                 <b>Entrega rÃ¡pida</b>
                 <small>Seguimiento en vivo</small>
               </p>
             </div>
             <div className="float-card bottom">
-              <span>â­</span>
+              <span>⭐</span>
               <p>
                 <b>4.9 de 5</b>
                 <small>El favorito del barrio</small>
@@ -457,7 +457,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
         <div className="panel-head">
           <div>
             <small>{serviceType}</small>
-            <h2>{step === "cart" ? "Tu bolsa" : step === "checkout" ? "Finalizar pedido" : "Â¡Pedido confirmado!"}</h2>
+            <h2>{step === "cart" ? "Tu bolsa" : step === "checkout" ? "Finalizar pedido" : "¡Pedido confirmado!"}</h2>
           </div>
           <button onClick={close} aria-label="Cerrar">
             <X />
@@ -532,7 +532,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
             <div className="form-grid">
               <label>
                 Nombre completo
-                <input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="Â¿QuiÃ©n recibe?" />
+                <input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="¿QuiÃ©n recibe?" />
               </label>
               {serviceType === "Domicilio" && (
                 <label>
@@ -579,7 +579,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
             </div>
             {payment === "Efectivo" && (
               <label className="change-field">
-                Â¿Con cuÃ¡nto pagarÃ¡s?
+                ¿Con cuÃ¡nto pagarÃ¡s?
                 <input type="number" value={form.changeFor} onChange={(e) => setForm({ ...form, changeFor: e.target.value })} placeholder={`MÃ­nimo ${total}`} />
               </label>
             )}
@@ -605,7 +605,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
             </span>
             <h3>Ya recibimos tu pedido</h3>
             <p>
-              Pedido <b>#{result.id}</b> Â· Pago en <b>{result.payment.toLowerCase()}</b>.
+              Pedido <b>#{result.id}</b> · Pago en <b>{result.payment.toLowerCase()}</b>.
             </p>
             <div className="tracking">
               <i className="done" />
@@ -662,7 +662,7 @@ function DashboardShell({ active, setActive, children, onNewSale, title = "Centr
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div className="side-brand">ðŸ”¥</div>
+        <div className="side-brand">🔥</div>
         {moduleItems.map(([label, Icon]) => (
           <button className={active === label ? "active" : ""} key={label} onClick={() => setActive(label)}>
             <Icon />
@@ -773,7 +773,7 @@ function OrderRow({ order }) {
       <div>
         <b>#{order.id}</b>
         <small>
-          {order.customer} Â· {lineText(order)}
+          {order.customer} · {lineText(order)}
         </small>
       </div>
       <b>{money(order.total)}</b>
@@ -800,7 +800,7 @@ function OrdersModule({ store }) {
             <div>
               <strong>{order.customer}</strong>
               <small>
-                {lineText(order)} Â· {order.serviceType || "Domicilio"}
+                {lineText(order)} · {order.serviceType || "Domicilio"}
               </small>
             </div>
             <span>
@@ -849,7 +849,7 @@ function ProductionBoard({ store }) {
                 <h3>{lineText({ ...order, lines: kitchenLines(order) })}</h3>
                 <p>
                   <strong>Cliente:</strong> {order.customer}
-                  {order.scheduleLabel ? ` Â· ${order.scheduleLabel}` : ""}
+                  {order.scheduleLabel ? ` · ${order.scheduleLabel}` : ""}
                 </p>
                 {areaState !== "Listo" && (
                   <footer>
@@ -887,7 +887,7 @@ function BarBoard({ store }) {
         <div className="bar-items">
           {barLines(order).map((line) => (
             <p key={`${order.id}-${line.id}`}>
-              <span>{line.qty}Ã—</span>
+              <span>{line.qty}×</span>
               <b>{line.name}</b>
               {line.note && <small>{line.note}</small>}
             </p>
@@ -970,7 +970,7 @@ function DispatchModule({ store }) {
                 </span>
                 <div>
                   <b>
-                    #{order.id} Â· {order.customer}
+                    #{order.id} · {order.customer}
                   </b>
                   <small>
                     <MapPin /> {order.address}
@@ -1128,7 +1128,7 @@ function CashControl({ store }) {
             </p>
             <p>
               <span>Retiros</span>
-              <b className="negative">âˆ’ {money(withdrawals)}</b>
+              <b className="negative">− {money(withdrawals)}</b>
             </p>
             <p className="cash-total">
               <span>Total esperado</span>
@@ -1180,11 +1180,11 @@ function CashControl({ store }) {
               ) : (
                 cash.movements.map((item) => (
                   <article key={item.id}>
-                    <span className={item.type === "Entrada" ? "in" : "out"}>{item.type === "Entrada" ? "+" : "âˆ’"}</span>
+                    <span className={item.type === "Entrada" ? "in" : "out"}>{item.type === "Entrada" ? "+" : "−"}</span>
                     <div>
                       <b>{item.concept}</b>
                       <small>
-                        {item.createdAt} Â· {item.type}
+                        {item.createdAt} · {item.type}
                       </small>
                     </div>
                     <strong>{money(item.amount)}</strong>
@@ -1263,7 +1263,7 @@ function CashControl({ store }) {
                     <b>Corte #{String(cut.id).slice(-6)}</b>
                     <small>
                       {cut.closedAt}
-                      {cut.note ? ` Â· ${cut.note}` : ""}
+                      {cut.note ? ` · ${cut.note}` : ""}
                     </small>
                   </div>
                   <div>
@@ -1549,7 +1549,7 @@ function ProductsModule({ store }) {
     category: "Tacos",
     station: "Cocina",
     deliveryEnabled: true,
-    emoji: "ðŸ½ï¸",
+    emoji: "🍽️",
     image: "",
     active: true,
   };
@@ -1650,7 +1650,7 @@ function ProductsModule({ store }) {
             <label className="full image-field">
               Imagen del producto
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => loadImage(e.target.files?.[0])} />
-              <small>PNG, JPG o WebP Â· mÃ¡ximo 1.5 MB</small>
+              <small>PNG, JPG o WebP · mÃ¡ximo 1.5 MB</small>
               {editing.image && (
                 <div className="image-preview">
                   <img src={editing.image} alt="Vista previa" />
@@ -1938,7 +1938,7 @@ function BusinessSettings({ store }) {
       <section className="dash-card">
         <div className="card-title">
           <div>
-            <small>CONFIGURACIÃ“N</small>
+            <small>CONFIGURACIÓN</small>
             <h2>Sucursal o negocio</h2>
           </div>
           <span className="status pagado">MySQL</span>
@@ -2169,7 +2169,7 @@ function ConfigurationCenter({ store }) {
             <div>
               <small>Hora y zona del dispositivo</small>
               <b>
-                {systemTime} Â· {systemZone}
+                {systemTime} · {systemZone}
               </b>
             </div>
           </div>
@@ -2407,7 +2407,7 @@ function CustomersModule({ customers }) {
             </div>
             <div>
               <small>{customer.address ? "DirecciÃ³n" : "Tipo de venta"}</small>
-              <p>{customer.address || "Para llevar Â· sin direcciÃ³n"}</p>
+              <p>{customer.address || "Para llevar · sin direcciÃ³n"}</p>
             </div>
             <div>
               <b>{customer.orders}</b>
@@ -2474,7 +2474,7 @@ function ReportsModule({ store }) {
   const card = filtered.filter((o) => ["Tarjeta", "Transferencia / DepÃ³sito"].includes(o.payment)).reduce((s, o) => s + o.total, 0);
   const total = cash + card;
   const ticket = filtered.length ? total / filtered.length : 0;
-  const rangeLabel = period === "turno" ? `${referenceDate} Â· ${shift}` : rangeStart === rangeEnd ? rangeStart : `${rangeStart} al ${rangeEnd}`;
+  const rangeLabel = period === "turno" ? `${referenceDate} · ${shift}` : rangeStart === rangeEnd ? rangeStart : `${rangeStart} al ${rangeEnd}`;
   return (
     <div className="reports-module">
       <section className="dash-card report-filters">
@@ -2597,7 +2597,7 @@ function ReportsModule({ store }) {
               <div key={order.id}>
                 <b>#{order.id}</b>
                 <span>
-                  {orderDate(order)} Â· {order.createdAt}
+                  {orderDate(order)} · {order.createdAt}
                 </span>
                 <strong>{order.customer}</strong>
                 <span>{order.payment}</span>
@@ -2704,7 +2704,7 @@ function PointOfSale({ store, close }) {
   const complete = async () => {
     if (submitting || !paymentReady) return;
     setSubmitting(true);
-    const scheduleLabel = timing === "Ahora" ? "Ahora" : `${scheduledDate} Â· ${scheduledTime}`;
+    const scheduleLabel = timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`;
     try {
       const order = await store.createOrder({
         source: "pos",
@@ -2871,10 +2871,10 @@ function PointOfSale({ store, close }) {
           <p>Primero selecciona cÃ³mo se entregarÃ¡ el pedido.</p>
           <div className="service-options">
             <button className={serviceType === "Recoger en restaurante" ? "active" : ""} onClick={() => changeServiceType("Recoger en restaurante")}>
-              <ShoppingBag /> ðŸª Recoger en restaurante
+              <ShoppingBag /> 🏪 Recoger en restaurante
             </button>
             <button className={serviceType === "Domicilio" ? "active" : ""} onClick={() => changeServiceType("Domicilio")}>
-              <Bike /> ðŸ›µ Entrega a domicilio
+              <Bike /> 🛵 Entrega a domicilio
             </button>
           </div>
           {serviceType && (
@@ -2951,7 +2951,7 @@ function PointOfSale({ store, close }) {
             </div>
           )}
           <div className="schedule-card">
-            <h3>Â¿Para cuÃ¡ndo?</h3>
+            <h3>¿Para cuÃ¡ndo?</h3>
             <div className="service-options">
               <button className={timing === "Ahora" ? "active" : ""} onClick={() => setTiming("Ahora")}>
                 <Clock3 /> Ahora
@@ -2991,7 +2991,7 @@ function PointOfSale({ store, close }) {
       {step === 3 && (
         <div className="sale-review">
           <section className="kitchen-print">
-            <div className="ticket-logo">ðŸ”¥ {store.business.brandName}</div>
+            <div className="ticket-logo">🔥 {store.business.brandName}</div>
             <h2>RESUMEN DE LA ORDEN</h2>
             <p className="ticket-meta">TodavÃ­a no se ha impreso ni enviado ninguna comanda</p>
             <div className="ticket-customer">
@@ -3000,18 +3000,18 @@ function PointOfSale({ store, close }) {
             </div>
             <div className="ticket-delivery">
               <b>{serviceType}</b>
-              <span>{serviceType === "Domicilio" ? `${customerData.phone} Â· ${customerData.address}` : "Recoge en sucursal"}</span>
-              <span>{timing === "Ahora" ? "Ahora" : `${scheduledDate} Â· ${scheduledTime}`}</span>
+              <span>{serviceType === "Domicilio" ? `${customerData.phone} · ${customerData.address}` : "Recoge en sucursal"}</span>
+              <span>{timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`}</span>
             </div>
             <div className="ticket-lines">
               {lines.map((line) => (
                 <article key={line.id}>
                   <b>
-                    {line.qty}Ã— {line.name}
-                    {line.size ? ` Â· ${line.size}` : ""}
+                    {line.qty}× {line.name}
+                    {line.size ? ` · ${line.size}` : ""}
                   </b>
                   <span>{money(line.price * line.qty)}</span>
-                  {line.note && <strong>INDICACIÃ“N: {line.note}</strong>}
+                  {line.note && <strong>INDICACIÓN: {line.note}</strong>}
                 </article>
               ))}
             </div>
@@ -3057,10 +3057,10 @@ function PointOfSale({ store, close }) {
             </div>
             <div className="payment-summary">
               <p>
-                <b>Tipo de entrega:</b> {serviceType === "Domicilio" ? "ðŸ›µ Entrega a domicilio" : "ðŸª Recoger en restaurante"}
+                <b>Tipo de entrega:</b> {serviceType === "Domicilio" ? "🛵 Entrega a domicilio" : "🏪 Recoger en restaurante"}
               </p>
               <p>
-                <b>Â¿Para cuÃ¡ndo?</b> {timing === "Ahora" ? "Ahora" : `${scheduledDate} Â· ${scheduledTime}`}
+                <b>¿Para cuÃ¡ndo?</b> {timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`}
               </p>
             </div>
             <h3>MÃ©todo de pago</h3>
@@ -3074,7 +3074,7 @@ function PointOfSale({ store, close }) {
               >
                 <CreditCard />
                 <span>
-                  <b>ðŸ’³ Transferencia / DepÃ³sito</b>
+                  <b>💳 Transferencia / DepÃ³sito</b>
                   <small>Requiere validaciÃ³n</small>
                 </span>
                 {payment === "Transferencia / DepÃ³sito" && <Check />}
@@ -3088,7 +3088,7 @@ function PointOfSale({ store, close }) {
               >
                 <Wallet />
                 <span>
-                  <b>ðŸ¤ Efectivo</b>
+                  <b>🤝 Efectivo</b>
                   <small>Cobro en caja</small>
                 </span>
                 {payment === "Efectivo" && <Check />}
@@ -3303,7 +3303,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
   const routeLayer = useRef(null);
   const locationMarker = useRef(null);
   const [location, setLocation] = useState(null);
-  const [locationStatus, setLocationStatus] = useState("Solicitando ubicaciÃ³n del dispositivoâ€¦");
+  const [locationStatus, setLocationStatus] = useState("Solicitando ubicaciÃ³n del dispositivo…");
 
   useEffect(() => {
     if (!mapElement.current || mapInstance.current) return;
@@ -3328,7 +3328,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
       setLocationStatus("UbicaciÃ³n en tiempo real activa");
       const icon = L.divIcon({
         className: "leaflet-live-icon",
-        html: "<span>â—</span>",
+        html: "<span>●</span>",
         iconSize: [28, 28],
         iconAnchor: [14, 14],
       });
@@ -3374,7 +3374,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
       });
       L.marker(order.coordinates, { icon })
         .addTo(orderLayer.current)
-        .bindTooltip(`#${order.id} Â· ${order.customer}`)
+        .bindTooltip(`#${order.id} · ${order.customer}`)
         .on("click", () => onSelect(order.id));
     });
     if (!location && points.length) map.fitBounds(L.latLngBounds(points).pad(0.18), { maxZoom: 14 });
@@ -3420,7 +3420,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
           </span>
           <div>
             <small>{locationStatus}</small>
-            <b>{location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)} Â· Â±${Math.round(location.accuracy)} m` : "Centro inicial: Tijuana, B.C."}</b>
+            <b>{location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)} · ±${Math.round(location.accuracy)} m` : "Centro inicial: Tijuana, B.C."}</b>
             {location && <em>Actualizado {location.updatedAt}</em>}
           </div>
         </div>
@@ -3469,7 +3469,7 @@ function DriverView({ store }) {
     <main className="driver-view driver-portal">
       <section className="driver-top">
         <div>
-          <span className="eyebrow">Servicio a domicilio Â· Turno activo</span>
+          <span className="eyebrow">Servicio a domicilio · Turno activo</span>
           <h1>Portal repartidor</h1>
           <p>Hola, Roberto. Tienes {activeOrders.length} servicios por completar.</p>
         </div>
@@ -3610,7 +3610,7 @@ function DriverView({ store }) {
                 </span>
                 <div>
                   <b>
-                    #{order.id} Â· {order.customer}
+                    #{order.id} · {order.customer}
                   </b>
                   <small>
                     <MapPin /> {order.address}
