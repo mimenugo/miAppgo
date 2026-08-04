@@ -21,7 +21,9 @@ $baseScripts = @(
 $incrementalMigrations = @(
   '005_migrate_demo_data.sql',
   '006_pos_business_rules.sql',
-  '007_delivery_state_integrity.sql'
+  '007_delivery_state_integrity.sql',
+  '008_business_discovery_questionnaire.sql',
+  '009_marketing_portal_and_brand_refresh.sql'
 )
 
 Write-Host "MySQL: $mysqlExecutable" -ForegroundColor Cyan

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ArrowRight, BarChart3, Bike, Check, ChefHat, ChevronRight, CircleDollarSign, Clock3, CookingPot, CreditCard, Edit3, LayoutDashboard, Map, MapPin, MessageCircle, Minus, PackageCheck, Phone, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, Store, Trash2, UserPlus, Users, Wallet, X, Crosshair, History, LocateFixed, LogIn, Navigation, Printer, ReceiptText } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, Check, ChefHat, ChevronRight, CircleDollarSign, ClipboardList, Clock3, CookingPot, CreditCard, Edit3, LayoutDashboard, Map, MapPin, MessageCircle, Minus, PackageCheck, Phone, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, Store, Trash2, UserPlus, Users, Wallet, X, Crosshair, History, LocateFixed, LogIn, Navigation, Printer, ReceiptText } from "lucide-react";
 import { useRestaurantStore } from "./store";
 
 const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(value);
@@ -21,7 +21,7 @@ const writeLocal = (key, value) => {
 };
 const pizzaSizeAdjustments = { Chica: -40, Mediana: 0, Grande: 70 };
 const pizzaPrice = (basePrice, size) => Math.max(0, Number(basePrice) + (pizzaSizeAdjustments[size] || 0));
-const lineText = (order) => order.lines.map((line) => `${line.qty} ${line.name}${line.size ? ` · ${line.size}` : ""}${line.note ? ` (${line.note})` : ""}`).join(" · ");
+const lineText = (order) => order.lines.map((line) => `${line.qty} ${line.name}${line.size ? ` Â· ${line.size}` : ""}${line.note ? ` (${line.note})` : ""}`).join(" Â· ");
 const lineStation = (line, products) => line.station || products.find((product) => product.id === line.id)?.station || "Cocina";
 const lineInStation = (line, products, station) => {
   const assigned = lineStation(line, products);
@@ -42,16 +42,16 @@ const escapeHtml = (value) =>
         "'": "&#039;",
       })[char],
   );
-const printAreaDocument = ({ title, printer, order, lines, type = "area", brand = "Gastro Suite", settings = {} }) => {
+const printAreaDocument = ({ title, printer, order, lines, type = "area", brand = "Mi Menu Suite", settings = {} }) => {
   if (!lines.length) return false;
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0";
   document.body.appendChild(frame);
-  const products = lines.map((line) => `<article><b>${line.qty}× ${escapeHtml(line.name)}${line.size ? ` · ${escapeHtml(line.size)}` : ""}</b>${line.note ? `<strong>INDICACIÓN: ${escapeHtml(line.note)}</strong>` : ""}</article>`).join("");
+  const products = lines.map((line) => `<article><b>${line.qty}Ã— ${escapeHtml(line.name)}${line.size ? ` Â· ${escapeHtml(line.size)}` : ""}</b>${line.note ? `<strong>INDICACIÃ“N: ${escapeHtml(line.note)}</strong>` : ""}</article>`).join("");
   const usd = settings.showUsdOnTicket && Number(settings.usdExchangeRate) > 0 ? `<small>USD aprox.: $${(Number(order.total) / Number(settings.usdExchangeRate)).toFixed(2)}</small>` : "";
   const detail = type === "sale" ? `<p class="total">TOTAL: ${escapeHtml(money(order.total))}</p>${usd}<p>Pago: ${escapeHtml(order.payment)}</p>` : "";
-  frame.contentDocument.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>@page{size:80mm auto;margin:4mm}body{font:12px monospace;color:#111}h1,h2,p{text-align:center;margin:5px 0}small{display:block;text-align:center}article{display:grid;gap:4px;padding:9px 0;border-bottom:1px dashed #555}article strong{font-size:11px}.meta{border-block:1px dashed #555;padding:8px;margin:10px 0}.total{font-size:17px;font-weight:900;border-top:2px solid #111;padding-top:10px}</style></head><body><h1>${escapeHtml(brand)}</h1><h2>${escapeHtml(title)}</h2><small>Impresora configurada: ${escapeHtml(printer)}</small><div class="meta"><b>#${escapeHtml(order.id)}</b><br>${escapeHtml(order.customer)} · ${escapeHtml(order.serviceType)}<br>${escapeHtml(order.scheduleLabel || "Ahora")}</div>${products}${detail}</body></html>`);
+  frame.contentDocument.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>@page{size:80mm auto;margin:4mm}body{font:12px monospace;color:#111}h1,h2,p{text-align:center;margin:5px 0}small{display:block;text-align:center}article{display:grid;gap:4px;padding:9px 0;border-bottom:1px dashed #555}article strong{font-size:11px}.meta{border-block:1px dashed #555;padding:8px;margin:10px 0}.total{font-size:17px;font-weight:900;border-top:2px solid #111;padding-top:10px}</style></head><body><h1>${escapeHtml(brand)}</h1><h2>${escapeHtml(title)}</h2><small>Impresora configurada: ${escapeHtml(printer)}</small><div class="meta"><b>#${escapeHtml(order.id)}</b><br>${escapeHtml(order.customer)} Â· ${escapeHtml(order.serviceType)}<br>${escapeHtml(order.scheduleLabel || "Ahora")}</div>${products}${detail}</body></html>`);
   frame.contentDocument.close();
   setTimeout(() => {
     frame.contentWindow.focus();
@@ -90,9 +90,9 @@ const updatePreparationArea = (store, order, area, next) => {
   });
 };
 
-function notifyOrderByWhatsApp(order, brandName = "Gastro Suite") {
-  const products = order.lines.map((line) => `• ${line.qty} x ${line.name}${line.size ? ` (${line.size})` : ""}${line.note ? `\n  _Indicaciones: ${line.note}_` : ""} — ${money(line.price * line.qty)}`).join("\n");
-  const message = [`🔥 *NUEVO PEDIDO ${brandName.toUpperCase()}*`, `*Folio:* #${order.id}`, `*Cliente:* ${order.customer}`, order.phone && order.phone !== "Mostrador" ? `*Teléfono:* ${order.phone}` : "", order.serviceType === "Domicilio" && order.address ? `*Dirección:* ${order.address}` : "", order.reference ? `*Referencia:* ${order.reference}` : "", "", "*Productos:*", products, "", `*Total:* ${money(order.total)}`, `*Pago:* ${order.payment}${order.payment === "Efectivo" && order.changeFor ? ` (paga con ${money(Number(order.changeFor))})` : ""}`].filter(Boolean).join("\n");
+function notifyOrderByWhatsApp(order, brandName = "Mi Menu Suite") {
+  const products = order.lines.map((line) => `â€¢ ${line.qty} x ${line.name}${line.size ? ` (${line.size})` : ""}${line.note ? `\n  _Indicaciones: ${line.note}_` : ""} â€” ${money(line.price * line.qty)}`).join("\n");
+  const message = [`ðŸ”¥ *NUEVO PEDIDO ${brandName.toUpperCase()}*`, `*Folio:* #${order.id}`, `*Cliente:* ${order.customer}`, order.phone && order.phone !== "Mostrador" ? `*TelÃ©fono:* ${order.phone}` : "", order.serviceType === "Domicilio" && order.address ? `*DirecciÃ³n:* ${order.address}` : "", order.reference ? `*Referencia:* ${order.reference}` : "", "", "*Productos:*", products, "", `*Total:* ${money(order.total)}`, `*Pago:* ${order.payment}${order.payment === "Efectivo" && order.changeFor ? ` (paga con ${money(Number(order.changeFor))})` : ""}`].filter(Boolean).join("\n");
   window.open(`https://wa.me/${WHATSAPP_TEST_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
 }
 
@@ -115,22 +115,27 @@ const roles = {
   repartidor: {
     label: "Repartidor Rutas",
     icon: Bike,
-    subtitle: "Entregas y navegación",
+    subtitle: "Entregas y navegaciÃ³n",
   },
   produccion: {
     label: "Cocina / Comandas",
     icon: ChefHat,
-    subtitle: "Producción de pedidos",
+    subtitle: "ProducciÃ³n de pedidos",
   },
   cliente: {
     label: "Cliente",
     icon: ShoppingBag,
-    subtitle: "Tienda pública para ordenar",
+    subtitle: "Tienda pÃºblica para ordenar",
+  },
+  marketing: {
+    label: "Marketing / Diagnostico",
+    icon: ClipboardList,
+    subtitle: "Portal comercial para prospectos",
   },
 };
 
 function ProductMedia({ product, className = "" }) {
-  return product.image ? <img className={`product-photo ${className}`} src={product.image} alt={product.name} /> : <span className={className}>{product.emoji || "🍽️"}</span>;
+  return product.image ? <img className={`product-photo ${className}`} src={product.image} alt={product.name} /> : <span className={className}>{product.emoji || "ðŸ½ï¸"}</span>;
 }
 
 function RolePicker({ role, openSessions }) {
@@ -142,7 +147,7 @@ function RolePicker({ role, openSessions }) {
           <CurrentIcon size={18} />
         </span>
         <span>
-          <small>Sesión actual</small>
+          <small>SesiÃ³n actual</small>
           <strong>{roles[role].label}</strong>
         </span>
         <ChevronRight size={17} />
@@ -151,13 +156,14 @@ function RolePicker({ role, openSessions }) {
   );
 }
 
-function SessionSelector({ role, setRole, close, store }) {
+function SessionSelector({ role, setRole, close, store, portalMode = "main" }) {
   const accountByRole = {
     administrador: "admin@gastrosuite.local",
     cajero: "caja@gastrosuite.local",
     produccion: "cocina@gastrosuite.local",
     barra: "barra@gastrosuite.local",
     repartidor: "repartidor@gastrosuite.local",
+    marketing: "MKT@gastrosuite.local",
   };
   const roleByApi = {
     administrator: "administrador",
@@ -165,12 +171,24 @@ function SessionSelector({ role, setRole, close, store }) {
     kitchen: "produccion",
     bar: "barra",
     driver: "repartidor",
+    marketing: "marketing",
   };
-  const [selected, setSelected] = useState(role === "cliente" ? "" : role);
-  const [email, setEmail] = useState(accountByRole[role] || "");
+  const availableRoles = portalMode === "marketing" ? ["marketing"] : Object.keys(roles).filter((key) => key !== "marketing");
+  const [selected, setSelected] = useState(portalMode === "marketing" ? "marketing" : role === "cliente" ? "" : role);
+  const [email, setEmail] = useState(accountByRole[portalMode === "marketing" ? "marketing" : role] || "");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (portalMode === "marketing") {
+      setSelected("marketing");
+      setEmail(accountByRole.marketing);
+      setPassword("");
+      setMessage("");
+    }
+  }, [portalMode]);
+
   const choose = (key) => {
     if (key === "cliente") {
       store.logout();
@@ -183,6 +201,7 @@ function SessionSelector({ role, setRole, close, store }) {
     setPassword("");
     setMessage("");
   };
+
   const signIn = async () => {
     try {
       setSubmitting(true);
@@ -191,7 +210,7 @@ function SessionSelector({ role, setRole, close, store }) {
       const userRole = roleByApi[user.role];
       if (userRole !== selected) {
         await store.logout();
-        throw new Error("La cuenta no corresponde al área seleccionada.");
+        throw new Error("La cuenta no corresponde al area seleccionada.");
       }
       setRole(userRole);
       close();
@@ -201,6 +220,7 @@ function SessionSelector({ role, setRole, close, store }) {
       setSubmitting(false);
     }
   };
+
   return (
     <div className="session-gate">
       <section className="session-window">
@@ -208,12 +228,13 @@ function SessionSelector({ role, setRole, close, store }) {
           <span>🔥</span>
           <div>
             <small>{store.business.brandName}</small>
-            <h1>Acceso al sistema</h1>
-            <p>Selecciona el área e ingresa con una cuenta almacenada en la base de datos.</p>
+            <h1>{portalMode === "marketing" ? "Portal de diagnostico" : "Acceso al sistema"}</h1>
+            <p>{portalMode === "marketing" ? "Ingresa con la cuenta de marketing para levantar diagnosticos comerciales sin acceso a la operacion del restaurante." : "Selecciona el area e ingresa con una cuenta almacenada en la base de datos."}</p>
           </div>
         </div>
         <div className="session-grid">
-          {Object.entries(roles).map(([key, item]) => {
+          {availableRoles.map((key) => {
+            const item = roles[key];
             const Icon = item.icon;
             return (
               <button key={key} className={key === selected ? "selected" : ""} onClick={() => choose(key)}>
@@ -241,11 +262,11 @@ function SessionSelector({ role, setRole, close, store }) {
             </label>
             {message && <p>{message}</p>}
             <button className="primary wide" disabled={!email || !password || submitting} onClick={signIn}>
-              {submitting ? "Ingresando..." : "Iniciar sesión"}
+              {submitting ? "Ingresando..." : "Iniciar sesion"}
             </button>
           </div>
         )}
-        {store.token && (
+        {store.token && portalMode !== "marketing" && (
           <button className="session-cancel" onClick={close}>
             Continuar en {roles[role].label}
           </button>
@@ -254,25 +275,27 @@ function SessionSelector({ role, setRole, close, store }) {
     </div>
   );
 }
-
-function Header({ role, openSessions, cartCount, onCart, business }) {
+function Header({ role, openSessions, cartCount, onCart, business, portalMode = "main" }) {
+  const marketingPortal = portalMode === "marketing";
   return (
     <header>
-      <a className="brand" href="#inicio">
-        {business.logoUrl ? <img className="brand-logo" src={business.logoUrl} alt={business.brandName} /> : <span className="brand-mark">🔥</span>}
+      <a className="brand" href={marketingPortal ? "#marketing" : "#inicio"}>
+        {business.logoUrl ? <img className="brand-logo" src={business.logoUrl} alt={business.brandName} /> : <span className="brand-mark">🍽️</span>}
         <span>
           {business.brandName}
-          <small>{business.restaurantName}</small>
+          <small>{marketingPortal ? "Portal de diagnostico" : business.restaurantName}</small>
         </span>
       </a>
-      <nav>
-        <a href="#inicio">Inicio</a>
-        <a href="#menu">Menú</a>
-        <a href="#pedidos">Pedidos</a>
-      </nav>
+      {!marketingPortal && (
+        <nav>
+          <a href="#inicio">Inicio</a>
+          <a href="#menu">Menu</a>
+          <a href="#pedidos">Pedidos</a>
+        </nav>
+      )}
       <div className="header-actions">
         <RolePicker role={role} openSessions={openSessions} />
-        {role === "cliente" && (
+        {role === "cliente" && !marketingPortal && (
           <button className="cart-button" onClick={onCart} aria-label="Abrir carrito">
             <ShoppingBag size={20} />
             <span>{cartCount}</span>
@@ -282,7 +305,6 @@ function Header({ role, openSessions, cartCount, onCart, business }) {
     </header>
   );
 }
-
 function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSize, showCart, setShowCart, createOrder, createStripeCheckout, business, posSettings }) {
   const [category, setCategory] = useState("Todos");
   const [query, setQuery] = useState("");
@@ -303,28 +325,28 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSi
             <p>Ingredientes frescos, cocina honesta y entregas que puedes seguir en tiempo real.</p>
             <div className="hero-actions">
               <a className="primary" href="#menu">
-                Ver el menú <ArrowRight size={18} />
+                Ver el menÃº <ArrowRight size={18} />
               </a>
               <span>
                 <Clock3 size={18} />
-                <b>25–35 min</b>
+                <b>25â€“35 min</b>
                 <small>tiempo estimado</small>
               </span>
             </div>
           </div>
           <div className="hero-art">
             <div className="dish">
-              🌮<span>🔥</span>
+              ðŸŒ®<span>ðŸ”¥</span>
             </div>
             <div className="float-card top">
-              <span>🛵</span>
+              <span>ðŸ›µ</span>
               <p>
-                <b>Entrega rápida</b>
+                <b>Entrega rÃ¡pida</b>
                 <small>Seguimiento en vivo</small>
               </p>
             </div>
             <div className="float-card bottom">
-              <span>⭐</span>
+              <span>â­</span>
               <p>
                 <b>4.9 de 5</b>
                 <small>El favorito del barrio</small>
@@ -335,7 +357,7 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSi
         <section className="menu-section" id="menu">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">Nuestro menú</span>
+              <span className="eyebrow">Nuestro menÃº</span>
               <h2>Favoritos de la casa</h2>
             </div>
             <label className="search">
@@ -418,7 +440,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
         paid: false,
       });
       notifyOrderByWhatsApp(order, business.brandName);
-      if (payment === "Stripe en línea") {
+      if (payment === "Stripe en lÃ­nea") {
         const session = await createStripeCheckout(order.dbId);
         window.location.assign(session.url);
         return;
@@ -435,7 +457,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
         <div className="panel-head">
           <div>
             <small>{serviceType}</small>
-            <h2>{step === "cart" ? "Tu bolsa" : step === "checkout" ? "Finalizar pedido" : "¡Pedido confirmado!"}</h2>
+            <h2>{step === "cart" ? "Tu bolsa" : step === "checkout" ? "Finalizar pedido" : "Â¡Pedido confirmado!"}</h2>
           </div>
           <button onClick={close} aria-label="Cerrar">
             <X />
@@ -447,7 +469,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
               {cart.length === 0 ? (
                 <div className="empty">
                   <ShoppingBag />
-                  <h3>Tu bolsa está vacía</h3>
+                  <h3>Tu bolsa estÃ¡ vacÃ­a</h3>
                 </div>
               ) : (
                 cart.map((row) => (
@@ -468,7 +490,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
                     </div>
                     {row.category === "Pizzas" && (
                       <label className="item-size">
-                        Tamaño
+                        TamaÃ±o
                         <select value={row.size || "Mediana"} onChange={(e) => updateSize(row.id, e.target.value)}>
                           {Object.keys(pizzaSizeAdjustments).map((size) => (
                             <option key={size}>{size}</option>
@@ -510,30 +532,30 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
             <div className="form-grid">
               <label>
                 Nombre completo
-                <input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="¿Quién recibe?" />
+                <input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="Â¿QuiÃ©n recibe?" />
               </label>
               {serviceType === "Domicilio" && (
                 <label>
-                  Teléfono
+                  TelÃ©fono
                   <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="33 1234 5678" />
                 </label>
               )}
               {serviceType === "Domicilio" && (
                 <label className="full">
-                  Dirección
-                  <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle, número, colonia" />
+                  DirecciÃ³n
+                  <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle, nÃºmero, colonia" />
                 </label>
               )}
               {serviceType === "Domicilio" && (
                 <label className="full">
                   Referencia
-                  <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="Portón, entre calles, indicaciones" />
+                  <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="PortÃ³n, entre calles, indicaciones" />
                 </label>
               )}
             </div>
             <div className="step-title">
               <span>2</span>
-              <h3>Método de pago</h3>
+              <h3>MÃ©todo de pago</h3>
             </div>
             <div className="payment-options">
               <button className={payment === "Efectivo" ? "active" : ""} onClick={() => setPayment("Efectivo")}>
@@ -545,23 +567,23 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
                 {payment === "Efectivo" && <Check />}
               </button>
               {posSettings.stripe?.enabled && (
-                <button className={payment === "Stripe en línea" ? "active" : ""} onClick={() => setPayment("Stripe en línea")}>
+                <button className={payment === "Stripe en lÃ­nea" ? "active" : ""} onClick={() => setPayment("Stripe en lÃ­nea")}>
                   <CreditCard />
                   <span>
-                    <b>Tarjeta en línea</b>
+                    <b>Tarjeta en lÃ­nea</b>
                     <small>Stripe Checkout</small>
                   </span>
-                  {payment === "Stripe en línea" && <Check />}
+                  {payment === "Stripe en lÃ­nea" && <Check />}
                 </button>
               )}
             </div>
             {payment === "Efectivo" && (
               <label className="change-field">
-                ¿Con cuánto pagarás?
-                <input type="number" value={form.changeFor} onChange={(e) => setForm({ ...form, changeFor: e.target.value })} placeholder={`Mínimo ${total}`} />
+                Â¿Con cuÃ¡nto pagarÃ¡s?
+                <input type="number" value={form.changeFor} onChange={(e) => setForm({ ...form, changeFor: e.target.value })} placeholder={`MÃ­nimo ${total}`} />
               </label>
             )}
-            {payment === "Stripe en línea" && (
+            {payment === "Stripe en lÃ­nea" && (
               <div className="card-note">
                 <ShieldCheck /> El pago se realiza en Stripe Checkout y solo se marca pagado cuando el webhook confirma el cobro.
               </div>
@@ -571,7 +593,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
                 Confirmar y enviar por WhatsApp <ArrowRight size={18} />
               </button>
               <small className="whatsapp-note">
-                <MessageCircle size={14} /> También se registra en cocina y administración
+                <MessageCircle size={14} /> TambiÃ©n se registra en cocina y administraciÃ³n
               </small>
             </OrderTotal>
           </div>
@@ -583,14 +605,14 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
             </span>
             <h3>Ya recibimos tu pedido</h3>
             <p>
-              Pedido <b>#{result.id}</b> · Pago en <b>{result.payment.toLowerCase()}</b>.
+              Pedido <b>#{result.id}</b> Â· Pago en <b>{result.payment.toLowerCase()}</b>.
             </p>
             <div className="tracking">
               <i className="done" />
               <i className="active" />
               <i />
               <small>Confirmado</small>
-              <small>Producción</small>
+              <small>ProducciÃ³n</small>
               <small>En camino</small>
             </div>
             <button className="primary wide" onClick={close}>
@@ -611,7 +633,7 @@ function OrderTotal({ subtotal, delivery, total, children }) {
         <b>{money(subtotal)}</b>
       </p>
       <p>
-        <span>Envío</span>
+        <span>EnvÃ­o</span>
         <b>{money(delivery)}</b>
       </p>
       <p className="total">
@@ -627,19 +649,20 @@ const modules = [
   ["Resumen", LayoutDashboard],
   ["Pedidos", ShoppingBag],
   ["Caja", ReceiptText],
-  ["Producción", CookingPot],
+  ["ProducciÃ³n", CookingPot],
   ["Barra", PackageCheck],
   ["Reparto", Bike],
   ["Productos", Store],
   ["Clientes", Users],
   ["Reportes", BarChart3],
-  ["Configuración", ShieldCheck],
+  ["DiagnÃ³stico", ClipboardList],
+  ["ConfiguraciÃ³n", ShieldCheck],
 ];
-function DashboardShell({ active, setActive, children, onNewSale, title = "Centro de operación", subtitle = "Todo tu restaurante en un solo lugar.", moduleItems = modules }) {
+function DashboardShell({ active, setActive, children, onNewSale, title = "Centro de operaciÃ³n", subtitle = "Todo tu restaurante en un solo lugar.", moduleItems = modules }) {
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div className="side-brand">🔥</div>
+        <div className="side-brand">ðŸ”¥</div>
         {moduleItems.map(([label, Icon]) => (
           <button className={active === label ? "active" : ""} key={label} onClick={() => setActive(label)}>
             <Icon />
@@ -670,17 +693,18 @@ function AdminView({ store, initialActive = "Resumen" }) {
   const [active, setActive] = useState(initialActive);
   const [saleOpen, setSaleOpen] = useState(false);
   return (
-    <DashboardShell active={active} setActive={setActive} onNewSale={() => setSaleOpen(true)} title={active} subtitle="Información sincronizada con cocina y reparto.">
+    <DashboardShell active={active} setActive={setActive} onNewSale={() => setSaleOpen(true)} title={active} subtitle="InformaciÃ³n sincronizada con cocina y reparto.">
       {active === "Resumen" && <Summary store={store} />}
       {active === "Pedidos" && <OrdersModule store={store} />}
       {active === "Caja" && <CashControl store={store} />}
-      {active === "Producción" && <ProductionBoard store={store} />}
+      {active === "ProducciÃ³n" && <ProductionBoard store={store} />}
       {active === "Barra" && <BarBoard store={store} />}
       {active === "Reparto" && <DispatchModule store={store} />}
       {active === "Productos" && <ProductsModule store={store} />}
       {active === "Clientes" && <CustomersModule customers={store.customers} />}
       {active === "Reportes" && <ReportsModule store={store} />}
-      {active === "Configuración" && <ConfigurationCenter store={store} />}
+      {active === "DiagnÃ³stico" && <BusinessDiscoveryModule store={store} />}
+      {active === "ConfiguraciÃ³n" && <ConfigurationCenter store={store} />}
       {saleOpen && <PointOfSale store={store} close={() => setSaleOpen(false)} />}
     </DashboardShell>
   );
@@ -728,7 +752,7 @@ function Summary({ store }) {
       <section className="dash-card orders-card module-space">
         <div className="card-title">
           <div>
-            <small>Operación en vivo</small>
+            <small>OperaciÃ³n en vivo</small>
             <h2>Pedidos recientes</h2>
           </div>
         </div>
@@ -749,7 +773,7 @@ function OrderRow({ order }) {
       <div>
         <b>#{order.id}</b>
         <small>
-          {order.customer} · {lineText(order)}
+          {order.customer} Â· {lineText(order)}
         </small>
       </div>
       <b>{money(order.total)}</b>
@@ -760,7 +784,7 @@ function OrderRow({ order }) {
 }
 
 function OrdersModule({ store }) {
-  const statuses = ["Recibido", "Pendiente de pago", "Confirmado", "En preparación", "Listo para recoger", "Listo para enviar", "Asignado a repartidor", "En ruta", "Entregado", "Cancelado"];
+  const statuses = ["Recibido", "Pendiente de pago", "Confirmado", "En preparaciÃ³n", "Listo para recoger", "Listo para enviar", "Asignado a repartidor", "En ruta", "Entregado", "Cancelado"];
   return (
     <section className="dash-card data-card">
       <div className="card-title">
@@ -776,7 +800,7 @@ function OrdersModule({ store }) {
             <div>
               <strong>{order.customer}</strong>
               <small>
-                {lineText(order)} · {order.serviceType || "Domicilio"}
+                {lineText(order)} Â· {order.serviceType || "Domicilio"}
               </small>
             </div>
             <span>
@@ -801,7 +825,7 @@ function ProductionBoard({ store }) {
   const visible = store.orders.filter((order) => !["Entregado", "Cancelado", "Pendiente de pago"].includes(order.status) && kitchenLines(order).length);
   const columns = [
     ["Pendiente", "Recibido", "stage-new"],
-    ["Preparando", "En preparación", "stage-cooking"],
+    ["Preparando", "En preparaciÃ³n", "stage-cooking"],
     ["Listo", "Listo", "stage-ready"],
   ];
   return (
@@ -825,7 +849,7 @@ function ProductionBoard({ store }) {
                 <h3>{lineText({ ...order, lines: kitchenLines(order) })}</h3>
                 <p>
                   <strong>Cliente:</strong> {order.customer}
-                  {order.scheduleLabel ? ` · ${order.scheduleLabel}` : ""}
+                  {order.scheduleLabel ? ` Â· ${order.scheduleLabel}` : ""}
                 </p>
                 {areaState !== "Listo" && (
                   <footer>
@@ -863,7 +887,7 @@ function BarBoard({ store }) {
         <div className="bar-items">
           {barLines(order).map((line) => (
             <p key={`${order.id}-${line.id}`}>
-              <span>{line.qty}×</span>
+              <span>{line.qty}Ã—</span>
               <b>{line.name}</b>
               {line.note && <small>{line.note}</small>}
             </p>
@@ -919,7 +943,7 @@ function BarBoard({ store }) {
 }
 
 function DispatchModule({ store }) {
-  const orders = store.orders.filter((o) => isDeliveryOrder(o) && ["Recibido", "Confirmado", "En preparación", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
+  const orders = store.orders.filter((o) => isDeliveryOrder(o) && ["Recibido", "Confirmado", "En preparaciÃ³n", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
   const readyStatus = (status) => status === "Listo para enviar";
   const assignDriver = (order, driver) =>
     store.updateOrder(order.id, {
@@ -930,8 +954,8 @@ function DispatchModule({ store }) {
     <section className="dash-card data-card">
       <div className="card-title">
         <div>
-          <small>Última milla</small>
-          <h2>Asignación de reparto</h2>
+          <small>Ãšltima milla</small>
+          <h2>AsignaciÃ³n de reparto</h2>
         </div>
       </div>
       {orders.length === 0 ? (
@@ -946,7 +970,7 @@ function DispatchModule({ store }) {
                 </span>
                 <div>
                   <b>
-                    #{order.id} · {order.customer}
+                    #{order.id} Â· {order.customer}
                   </b>
                   <small>
                     <MapPin /> {order.address}
@@ -957,7 +981,7 @@ function DispatchModule({ store }) {
               <div>
                 <select value={order.driver} onChange={(e) => assignDriver(order, e.target.value)}>
                   <option value="">Sin asignar</option>
-                  <option>Roberto Gómez</option>
+                  <option>Roberto GÃ³mez</option>
                   <option>Luis Fernando Ruiz</option>
                 </select>
                 <span className={`status ${order.status.toLowerCase().replace(" ", "-")}`}>{order.status}</span>
@@ -1016,7 +1040,7 @@ function CashControl({ store }) {
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 1800);
   };
-  const tabs = ["Estado de caja", "Entradas / retiros", "Cierre de turno (X)", "Cierre del día (Z)", "Historial de cortes"];
+  const tabs = ["Estado de caja", "Entradas / retiros", "Cierre de turno (X)", "Cierre del dÃ­a (Z)", "Historial de cortes"];
   return (
     <div className="cash-module">
       <div className="cash-tabs">
@@ -1035,12 +1059,12 @@ function CashControl({ store }) {
                 new Intl.DateTimeFormat("en-CA", {
                   timeZone: store.business.timezone,
                 }).format(new Date()),
-            ) && <div className="api-warning">Hay pedidos del día y la caja no está abierta. Realiza la apertura del turno.</div>}
+            ) && <div className="api-warning">Hay pedidos del dÃ­a y la caja no estÃ¡ abierta. Realiza la apertura del turno.</div>}
           <section className={`cash-status ${cash.open ? "open" : "closed"}`}>
             <div>
               <span className="live-dot" />
               <small>{cash.open ? "CAJA ABIERTA" : "CAJA CERRADA"}</small>
-              <h2>{cash.open ? `Turno ${cash.shiftName || ""} en operación` : "Inicia un nuevo turno"}</h2>
+              <h2>{cash.open ? `Turno ${cash.shiftName || ""} en operaciÃ³n` : "Inicia un nuevo turno"}</h2>
               <p>{cash.open ? `Apertura: ${new Date(cash.openedAt).toLocaleString("es-MX")}` : "Registra el turno y fondo inicial para comenzar."}</p>
             </div>
             {cash.open ? (
@@ -1104,7 +1128,7 @@ function CashControl({ store }) {
             </p>
             <p>
               <span>Retiros</span>
-              <b className="negative">− {money(withdrawals)}</b>
+              <b className="negative">âˆ’ {money(withdrawals)}</b>
             </p>
             <p className="cash-total">
               <span>Total esperado</span>
@@ -1146,7 +1170,7 @@ function CashControl({ store }) {
           <section className="dash-card">
             <div className="card-title">
               <div>
-                <small>Bitácora</small>
+                <small>BitÃ¡cora</small>
                 <h2>Movimientos del turno</h2>
               </div>
             </div>
@@ -1156,11 +1180,11 @@ function CashControl({ store }) {
               ) : (
                 cash.movements.map((item) => (
                   <article key={item.id}>
-                    <span className={item.type === "Entrada" ? "in" : "out"}>{item.type === "Entrada" ? "+" : "−"}</span>
+                    <span className={item.type === "Entrada" ? "in" : "out"}>{item.type === "Entrada" ? "+" : "âˆ’"}</span>
                     <div>
                       <b>{item.concept}</b>
                       <small>
-                        {item.createdAt} · {item.type}
+                        {item.createdAt} Â· {item.type}
                       </small>
                     </div>
                     <strong>{money(item.amount)}</strong>
@@ -1171,7 +1195,7 @@ function CashControl({ store }) {
           </section>
         </div>
       )}
-      {["Cierre de turno (X)", "Cierre del día (Z)"].includes(tab) && (
+      {["Cierre de turno (X)", "Cierre del dÃ­a (Z)"].includes(tab) && (
         <section className="dash-card close-register">
           <div className="card-title">
             <div>
@@ -1190,7 +1214,7 @@ function CashControl({ store }) {
                 </div>
                 <label>
                   Efectivo contado
-                  <input type="number" min="0" value={counted} onChange={(e) => setCounted(e.target.value)} placeholder="Captura el total físico" />
+                  <input type="number" min="0" value={counted} onChange={(e) => setCounted(e.target.value)} placeholder="Captura el total fÃ­sico" />
                 </label>
                 <label className="full">
                   Observaciones
@@ -1228,7 +1252,7 @@ function CashControl({ store }) {
           </div>
           <div className="cuts-list">
             {cash.cuts.length === 0 ? (
-              <Empty text="Todavía no hay cierres de caja" />
+              <Empty text="TodavÃ­a no hay cierres de caja" />
             ) : (
               cash.cuts.map((cut) => (
                 <article key={cut.id}>
@@ -1239,7 +1263,7 @@ function CashControl({ store }) {
                     <b>Corte #{String(cut.id).slice(-6)}</b>
                     <small>
                       {cut.closedAt}
-                      {cut.note ? ` · ${cut.note}` : ""}
+                      {cut.note ? ` Â· ${cut.note}` : ""}
                     </small>
                   </div>
                   <div>
@@ -1260,12 +1284,12 @@ function CashControl({ store }) {
           </div>
         </section>
       )}
-      {tab === "Configuración POS" && (
+      {tab === "ConfiguraciÃ³n POS" && (
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
-              <small>Hardware y operación</small>
-              <h2>Impresoras, cajón y pagos</h2>
+              <small>Hardware y operaciÃ³n</small>
+              <h2>Impresoras, cajÃ³n y pagos</h2>
             </div>
             {settingsSaved && (
               <span className="settings-saved">
@@ -1275,7 +1299,7 @@ function CashControl({ store }) {
           </div>
           <div className="settings-grid">
             <fieldset>
-              <legend>Impresión por área</legend>
+              <legend>ImpresiÃ³n por Ã¡rea</legend>
               <label>
                 Impresora de caja
                 <input
@@ -1340,7 +1364,7 @@ function CashControl({ store }) {
               </label>
             </fieldset>
             <fieldset>
-              <legend>Cajón de dinero</legend>
+              <legend>CajÃ³n de dinero</legend>
               <label className="inline-check">
                 <input
                   type="checkbox"
@@ -1365,14 +1389,14 @@ function CashControl({ store }) {
                     })
                   }
                 />{" "}
-                Impresora/cajón compatibles y con puente POS configurado
+                Impresora/cajÃ³n compatibles y con puente POS configurado
               </label>
               <p className="settings-note">
-                La aplicación emite el evento <code>gastropos:open-cash-drawer</code>. La apertura física y el envío silencioso a una impresora específica requieren un conector local compatible con ESC/POS.
+                La aplicaciÃ³n emite el evento <code>gastropos:open-cash-drawer</code>. La apertura fÃ­sica y el envÃ­o silencioso a una impresora especÃ­fica requieren un conector local compatible con ESC/POS.
               </p>
             </fieldset>
             <fieldset>
-              <legend>Transferencia / Depósito</legend>
+              <legend>Transferencia / DepÃ³sito</legend>
               <label>
                 Titular
                 <input
@@ -1390,7 +1414,7 @@ function CashControl({ store }) {
                 <input value={posSettings.bank} onChange={(e) => setPosSettings({ ...posSettings, bank: e.target.value })} />
               </label>
               <label>
-                Número de cuenta
+                NÃºmero de cuenta
                 <input
                   value={posSettings.accountNumber}
                   onChange={(e) =>
@@ -1406,7 +1430,7 @@ function CashControl({ store }) {
                 <input value={posSettings.clabe} onChange={(e) => setPosSettings({ ...posSettings, clabe: e.target.value })} />
               </label>
               <label>
-                Número de tarjeta
+                NÃºmero de tarjeta
                 <input
                   value={posSettings.cardNumber}
                   onChange={(e) =>
@@ -1418,7 +1442,7 @@ function CashControl({ store }) {
                 />
               </label>
               <label>
-                URL del código QR
+                URL del cÃ³digo QR
                 <input
                   value={posSettings.paymentQr}
                   onChange={(e) =>
@@ -1476,7 +1500,7 @@ function CashControl({ store }) {
                   />
                 </label>
                 <label>
-                  Preparación (min)
+                  PreparaciÃ³n (min)
                   <input
                     type="number"
                     min="0"
@@ -1507,7 +1531,7 @@ function CashControl({ store }) {
             </fieldset>
           </div>
           <button className="primary" onClick={saveSettings}>
-            Guardar configuración
+            Guardar configuraciÃ³n
           </button>
         </section>
       )}
@@ -1525,7 +1549,7 @@ function ProductsModule({ store }) {
     category: "Tacos",
     station: "Cocina",
     deliveryEnabled: true,
-    emoji: "🍽️",
+    emoji: "ðŸ½ï¸",
     image: "",
     active: true,
   };
@@ -1595,7 +1619,7 @@ function ProductsModule({ store }) {
               <input type="number" value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })} />
             </label>
             <label>
-              Categoría
+              CategorÃ­a
               <select value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
                 {categories.map((category) => (
                   <option key={category} value={category}>
@@ -1605,7 +1629,7 @@ function ProductsModule({ store }) {
               </select>
             </label>
             <label>
-              Área de preparación
+              Ãrea de preparaciÃ³n
               <select value={editing.station || "Cocina"} onChange={(e) => setEditing({ ...editing, station: e.target.value })}>
                 <option value="Cocina">Cocina</option>
                 <option value="Barra">Barra / Listo para servir</option>
@@ -1616,7 +1640,7 @@ function ProductsModule({ store }) {
               <input type="checkbox" checked={editing.deliveryEnabled !== false} onChange={(e) => setEditing({ ...editing, deliveryEnabled: e.target.checked })} />
               <span>
                 <b>Disponible para reparto</b>
-                <small>Si se desactiva, solo podrá venderse desde Caja.</small>
+                <small>Si se desactiva, solo podrÃ¡ venderse desde Caja.</small>
               </span>
             </label>
             <label>
@@ -1626,7 +1650,7 @@ function ProductsModule({ store }) {
             <label className="full image-field">
               Imagen del producto
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => loadImage(e.target.files?.[0])} />
-              <small>PNG, JPG o WebP · máximo 1.5 MB</small>
+              <small>PNG, JPG o WebP Â· mÃ¡ximo 1.5 MB</small>
               {editing.image && (
                 <div className="image-preview">
                   <img src={editing.image} alt="Vista previa" />
@@ -1637,7 +1661,7 @@ function ProductsModule({ store }) {
               )}
             </label>
             <label className="full">
-              Descripción
+              DescripciÃ³n
               <input value={editing.desc} onChange={(e) => setEditing({ ...editing, desc: e.target.value })} />
             </label>
           </div>
@@ -1650,6 +1674,233 @@ function ProductsModule({ store }) {
   );
 }
 
+function BusinessDiscoveryModule({ store, mode = "admin" }) {
+  const canReview = mode === "admin" && store.currentUser?.role === "administrator";
+  const emptyContact = useMemo(
+    () => ({
+      businessName: "",
+      respondentName: "",
+      respondentRole: "",
+      phone: "",
+      email: "",
+    }),
+    [],
+  );
+  const [questions, setQuestions] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [contact, setContact] = useState(emptyContact);
+  const [answers, setAnswers] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState("");
+  const [message, setMessage] = useState("");
+  const [review, setReview] = useState(null);
+
+  useEffect(() => {
+    setContact(emptyContact);
+  }, [emptyContact]);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setMessage("");
+      const questionList = await store.loadDiscoveryQuestions();
+      setQuestions(questionList);
+      if (canReview) setSubmissions(await store.loadDiscoverySubmissions());
+      else setSubmissions([]);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, [canReview]);
+
+  const blocks = useMemo(() => {
+    const grouped = [];
+    for (const question of questions) {
+      let block = grouped.find((item) => item.code === question.blockCode);
+      if (!block) {
+        block = { code: question.blockCode, title: question.blockTitle, questions: [] };
+        grouped.push(block);
+      }
+      block.questions.push(question);
+    }
+    return grouped;
+  }, [questions]);
+
+  const answeredCount = questions.filter((question) => String(answers[question.code] || "").trim()).length;
+  const progress = questions.length ? Math.round((answeredCount / questions.length) * 100) : 0;
+  const completedCount = submissions.filter((item) => item.status === "completed").length;
+  const completionRate = submissions.length ? Math.round((completedCount / submissions.length) * 100) : 0;
+  const latestSubmission = submissions[0];
+
+  const save = async (status) => {
+    if (!contact.businessName.trim() || !contact.respondentName.trim()) {
+      setMessage("Captura el nombre del negocio y de la persona entrevistada.");
+      return;
+    }
+    try {
+      setSaving(status);
+      setMessage("");
+      const saved = await store.saveDiscoverySubmission({ ...contact, answers, status });
+      if (canReview) setSubmissions((current) => [saved, ...current]);
+      setMessage(status === "completed" ? "Diagnostico guardado correctamente." : "Borrador guardado correctamente.");
+      if (mode === "capture") {
+        setContact(emptyContact);
+        setAnswers({});
+      }
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const reset = () => {
+    setContact(emptyContact);
+    setAnswers({});
+    setMessage("");
+  };
+
+  const openReview = async (id) => {
+    try {
+      setMessage("");
+      setReview(await store.loadDiscoverySubmission(id));
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  return (
+    <div className="discovery-module">
+      <section className="dash-card discovery-intro">
+        <div>
+          <small>{canReview ? "ANALISIS COMERCIAL" : "CAPTURA DE DIAGNOSTICO"}</small>
+          <h2>{canReview ? "Diagnosticos comerciales y operativos" : "Levantamiento de necesidades del restaurante"}</h2>
+          <p>{canReview ? "El administrador puede revisar respuestas, avance y calidad de la informacion levantada por marketing." : "Completa el formulario para entender el modelo de negocio, la operacion y las necesidades del posible cliente."}</p>
+        </div>
+        <div className="discovery-progress">
+          <strong>{answeredCount}/{questions.length || 32}</strong>
+          <span>preguntas respondidas</span>
+          <div><i style={{ width: `${progress}%` }} /></div>
+        </div>
+      </section>
+
+      {canReview && (
+        <section className="discovery-admin-stats">
+          <article className="dash-card">
+            <small>DIAGNOSTICOS</small>
+            <strong>{submissions.length}</strong>
+            <span>Total registrados</span>
+          </article>
+          <article className="dash-card">
+            <small>COMPLETADOS</small>
+            <strong>{completedCount}</strong>
+            <span>{completionRate}% del total</span>
+          </article>
+          <article className="dash-card">
+            <small>ULTIMO REGISTRO</small>
+            <strong>{latestSubmission?.businessName || "Sin datos"}</strong>
+            <span>{latestSubmission?.respondentName || "Aun no hay respuestas"}</span>
+          </article>
+        </section>
+      )}
+
+      {message && <p className={`discovery-message ${message.includes("guardado") ? "success" : ""}`}>{message}</p>}
+
+      <section className="dash-card discovery-contact">
+        <div className="card-title">
+          <div><small>DATOS GENERALES</small><h2>{canReview ? "Nuevo diagnostico" : "Prospecto y persona entrevistada"}</h2></div>
+          <button className="outline" type="button" onClick={reset}><Plus /> Nuevo</button>
+        </div>
+        <div className="discovery-contact-grid">
+          <label>Nombre del negocio *<input value={contact.businessName} onChange={(event) => setContact({ ...contact, businessName: event.target.value })} /></label>
+          <label>Persona entrevistada *<input value={contact.respondentName} onChange={(event) => setContact({ ...contact, respondentName: event.target.value })} /></label>
+          <label>Cargo o funcion<input value={contact.respondentRole} onChange={(event) => setContact({ ...contact, respondentRole: event.target.value })} /></label>
+          <label>Telefono<input type="tel" value={contact.phone} onChange={(event) => setContact({ ...contact, phone: event.target.value })} /></label>
+          <label className="full">Correo electronico<input type="email" value={contact.email} onChange={(event) => setContact({ ...contact, email: event.target.value })} /></label>
+        </div>
+      </section>
+
+      {loading ? (
+        <section className="dash-card empty"><h3>Cargando formulario...</h3></section>
+      ) : (
+        blocks.map((block, blockIndex) => (
+          <section className={`dash-card discovery-block ${block.code === "high_impact" ? "high-impact" : ""}`} key={block.code}>
+            <header><span>{blockIndex + 1}</span><div><small>{block.code === "high_impact" ? "CIERRE DE ENTREVISTA" : "CUESTIONARIO"}</small><h2>{block.title}</h2></div></header>
+            <div className="discovery-questions">
+              {block.questions.map((question) => (
+                <label key={question.code}>
+                  <span><b>{question.sortOrder}.</b> {question.text}</span>
+                  <textarea rows="3" value={answers[question.code] || ""} placeholder="Escribe la respuesta..." onChange={(event) => setAnswers((current) => ({ ...current, [question.code]: event.target.value }))} />
+                </label>
+              ))}
+            </div>
+          </section>
+        ))
+      )}
+
+      <section className="dash-card discovery-actions">
+        <div><b>{answeredCount} respuestas capturadas</b><small>Puedes guardar un borrador aunque el diagnostico aun no este completo.</small></div>
+        <button className="outline" disabled={Boolean(saving)} onClick={() => save("draft")}><History /> {saving === "draft" ? "Guardando..." : "Guardar borrador"}</button>
+        <button className="primary" disabled={Boolean(saving)} onClick={() => save("completed")}><Check /> {saving === "completed" ? "Guardando..." : "Completar diagnostico"}</button>
+      </section>
+
+      {canReview && (
+        <section className="dash-card discovery-history">
+          <div className="card-title"><div><small>HISTORIAL</small><h2>Diagnosticos registrados</h2></div><span className="status pagado">{submissions.length}</span></div>
+          {!submissions.length ? <div className="empty"><ClipboardList /><h3>Aun no hay diagnosticos guardados</h3></div> : submissions.map((item) => (
+            <article key={item.id}>
+              <span><ClipboardList /></span>
+              <div><b>{item.businessName}</b><small>{item.respondentName}{item.respondentRole ? ` · ${item.respondentRole}` : ""}</small></div>
+              <div><b>{item.answeredQuestions}/{item.totalQuestions}</b><small>respuestas</small></div>
+              <div><b>{new Date(item.createdAt).toLocaleDateString("es-MX")}</b><small>{item.createdByName || "Administrador"}</small></div>
+              <span className={`status ${item.status === "completed" ? "pagado" : "en-preparacion"}`}>{item.status === "completed" ? "Completado" : "Borrador"}</span>
+              <button className="outline" onClick={() => openReview(item.id)}>Ver</button>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {review && (
+        <Modal title={`Diagnostico · ${review.businessName}`} close={() => setReview(null)}>
+          <div className="discovery-review-meta">
+            <p><small>ENTREVISTADO</small><b>{review.respondentName}</b></p>
+            <p><small>ESTADO</small><b>{review.status === "completed" ? "Completado" : "Borrador"}</b></p>
+            <p><small>RESPUESTAS</small><b>{review.answeredQuestions}/{review.totalQuestions}</b></p>
+          </div>
+          <div className="discovery-review-list">
+            {questions.filter((question) => review.answers?.[question.code]).map((question) => (
+              <article key={question.code}><small>{question.sortOrder}. {question.text}</small><p>{review.answers[question.code]}</p></article>
+            ))}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function MarketingPortalView({ store }) {
+  return (
+    <main className="marketing-portal">
+      <section className="marketing-hero">
+        <div>
+          <small>MI MENU SUITE</small>
+          <h1>Portal comercial para diagnostico de restaurantes</h1>
+          <p>Esta vista esta reservada para marketing. Aqui solo se captura informacion de prospectos y necesidades del negocio.</p>
+        </div>
+        <div className="marketing-hero-card">
+          <b>Acceso restringido</b>
+          <span>El usuario MKT no puede ver pedidos, clientes, caja ni configuracion operativa.</span>
+        </div>
+      </section>
+      <BusinessDiscoveryModule store={store} mode="capture" />
+    </main>
+  );
+}
 function BusinessSettings({ store }) {
   const [form, setForm] = useState(store.business);
   const [saving, setSaving] = useState(false);
@@ -1675,7 +1926,7 @@ function BusinessSettings({ store }) {
       setSaving(true);
       setMessage("");
       await store.saveBusiness(form);
-      setMessage("Configuración guardada en la base de datos.");
+      setMessage("ConfiguraciÃ³n guardada en la base de datos.");
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -1687,12 +1938,12 @@ function BusinessSettings({ store }) {
       <section className="dash-card">
         <div className="card-title">
           <div>
-            <small>CONFIGURACIÓN</small>
+            <small>CONFIGURACIÃ“N</small>
             <h2>Sucursal o negocio</h2>
           </div>
           <span className="status pagado">MySQL</span>
         </div>
-        <p className="settings-intro">Estos datos actualizan automáticamente encabezados, menú digital, panel administrativo, mensajes y tickets.</p>
+        <p className="settings-intro">Estos datos actualizan automÃ¡ticamente encabezados, menÃº digital, panel administrativo, mensajes y tickets.</p>
         <div className="business-form">
           <label>
             Nombre de la marca
@@ -1707,15 +1958,15 @@ function BusinessSettings({ store }) {
             <input value={form.branchName || ""} onChange={(event) => setForm({ ...form, branchName: event.target.value })} />
           </label>
           <label>
-            Teléfono
+            TelÃ©fono
             <input value={form.phone || ""} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
           </label>
           <label className="full">
-            Dirección
+            DirecciÃ³n
             <input value={form.address || ""} onChange={(event) => setForm({ ...form, address: event.target.value })} />
           </label>
           <label className="full">
-            Correo electrónico
+            Correo electrÃ³nico
             <input type="email" value={form.email || ""} onChange={(event) => setForm({ ...form, email: event.target.value })} />
           </label>
           <label className="full business-logo-field">
@@ -1726,7 +1977,7 @@ function BusinessSettings({ store }) {
         </div>
         {message && <p className="settings-message">{message}</p>}
         <button className="primary" disabled={saving || !form.brandName || !form.restaurantName || !form.branchName} onClick={save}>
-          {saving ? "Guardando..." : "Guardar configuración"}
+          {saving ? "Guardando..." : "Guardar configuraciÃ³n"}
         </button>
       </section>
     </div>
@@ -1734,7 +1985,7 @@ function BusinessSettings({ store }) {
 }
 
 function ConfigurationCenter({ store }) {
-  const tabs = ["Negocio", "Configuración POS", "Turnos", "Zona horaria", "Pagos en línea", "QR y transferencias", "Tarjeta en caja"];
+  const tabs = ["Negocio", "ConfiguraciÃ³n POS", "Turnos", "Zona horaria", "Pagos en lÃ­nea", "QR y transferencias", "Tarjeta en caja"];
   const [tab, setTab] = useState("Negocio"),
     [settings, setSettings] = useState(store.posSettings),
     [saved, setSaved] = useState("");
@@ -1752,7 +2003,7 @@ function ConfigurationCenter({ store }) {
       const stored = await store.savePosSettings(settings);
       settingsDirty.current = false;
       setSettings(stored);
-      setSaved("Configuración guardada.");
+      setSaved("ConfiguraciÃ³n guardada.");
     } catch (error) {
       setSaved(error.message);
     }
@@ -1778,17 +2029,17 @@ function ConfigurationCenter({ store }) {
         ))}
       </div>
       {tab === "Negocio" && <BusinessSettings store={store} />}
-      {tab === "Configuración POS" && (
+      {tab === "ConfiguraciÃ³n POS" && (
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
               <small>Hardware y moneda</small>
-              <h2>Configuración POS</h2>
+              <h2>ConfiguraciÃ³n POS</h2>
             </div>
           </div>
           <div className="settings-grid">
             <fieldset>
-              <legend>Impresoras por área</legend>
+              <legend>Impresoras por Ã¡rea</legend>
               <label>
                 Caja
                 <input value={settings.cashPrinter || ""} onChange={(e) => set("cashPrinter", e.target.value)} />
@@ -1803,9 +2054,9 @@ function ConfigurationCenter({ store }) {
               </label>
             </fieldset>
             <fieldset>
-              <legend>Cajón</legend>
+              <legend>CajÃ³n</legend>
               <label className="inline-check">
-                <input type="checkbox" checked={settings.cashDrawerEnabled !== false} onChange={(e) => set("cashDrawerEnabled", e.target.checked)} /> Abrir únicamente al confirmar efectivo
+                <input type="checkbox" checked={settings.cashDrawerEnabled !== false} onChange={(e) => set("cashDrawerEnabled", e.target.checked)} /> Abrir Ãºnicamente al confirmar efectivo
               </label>
               <label className="inline-check">
                 <input type="checkbox" checked={Boolean(settings.cashDrawerCompatible)} onChange={(e) => set("cashDrawerCompatible", e.target.checked)} /> Puente ESC/POS compatible configurado
@@ -1814,7 +2065,7 @@ function ConfigurationCenter({ store }) {
             <fieldset>
               <legend>Tipo de cambio</legend>
               <label>
-                Pesos por dólar
+                Pesos por dÃ³lar
                 <input type="number" min="0.01" step="0.01" value={settings.usdExchangeRate || ""} onChange={(e) => set("usdExchangeRate", Number(e.target.value))} />
               </label>
               <label className="inline-check">
@@ -1823,7 +2074,7 @@ function ConfigurationCenter({ store }) {
             </fieldset>
           </div>
           <button className="primary" onClick={save}>
-            Guardar configuración POS
+            Guardar configuraciÃ³n POS
           </button>
         </section>
       )}
@@ -1918,25 +2169,25 @@ function ConfigurationCenter({ store }) {
             <div>
               <small>Hora y zona del dispositivo</small>
               <b>
-                {systemTime} · {systemZone}
+                {systemTime} Â· {systemZone}
               </b>
             </div>
           </div>
-          {!zoneMatches && <div className="api-warning">La zona del dispositivo no coincide con Tijuana/Los Ángeles. Verifica la configuración de fecha y hora del sistema.</div>}
+          {!zoneMatches && <div className="api-warning">La zona del dispositivo no coincide con Tijuana/Los Ãngeles. Verifica la configuraciÃ³n de fecha y hora del sistema.</div>}
         </section>
       )}
-      {tab === "Pagos en línea" && (
+      {tab === "Pagos en lÃ­nea" && (
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
-              <small>Solo menú web / PWA</small>
+              <small>Solo menÃº web / PWA</small>
               <h2>Stripe Checkout</h2>
             </div>
             <span className="status pagado">API segura</span>
           </div>
           <div className="settings-grid">
             <fieldset>
-              <legend>Operación</legend>
+              <legend>OperaciÃ³n</legend>
               <label className="inline-check">
                 <input
                   type="checkbox"
@@ -1948,7 +2199,7 @@ function ConfigurationCenter({ store }) {
                     })
                   }
                 />{" "}
-                Habilitar Stripe para clientes en línea
+                Habilitar Stripe para clientes en lÃ­nea
               </label>
               <label>
                 Ambiente
@@ -1962,11 +2213,11 @@ function ConfigurationCenter({ store }) {
                   }
                 >
                   <option value="test">Sandbox / pruebas</option>
-                  <option value="production">Producción</option>
+                  <option value="production">ProducciÃ³n</option>
                 </select>
               </label>
               <label>
-                Llave pública de pruebas
+                Llave pÃºblica de pruebas
                 <input
                   value={settings.stripe?.publishableTest || ""}
                   onChange={(e) =>
@@ -1979,7 +2230,7 @@ function ConfigurationCenter({ store }) {
                 />
               </label>
               <label>
-                Llave pública de producción
+                Llave pÃºblica de producciÃ³n
                 <input
                   value={settings.stripe?.publishableLive || ""}
                   onChange={(e) =>
@@ -1994,7 +2245,7 @@ function ConfigurationCenter({ store }) {
             </fieldset>
             <fieldset>
               <legend>Variables privadas del servidor</legend>
-              <p className="settings-note">Configura STRIPE_TEST_RESTRICTED_KEY y STRIPE_TEST_WEBHOOK_SECRET. Para producción usa STRIPE_LIVE_RESTRICTED_KEY y STRIPE_LIVE_WEBHOOK_SECRET. Las llaves privadas no se guardan ni se muestran en esta pantalla.</p>
+              <p className="settings-note">Configura STRIPE_TEST_RESTRICTED_KEY y STRIPE_TEST_WEBHOOK_SECRET. Para producciÃ³n usa STRIPE_LIVE_RESTRICTED_KEY y STRIPE_LIVE_WEBHOOK_SECRET. Las llaves privadas no se guardan ni se muestran en esta pantalla.</p>
               <p className="settings-note">
                 Webhook: <code>/api/webhooks/stripe</code>
               </p>
@@ -2057,9 +2308,9 @@ function ConfigurationCenter({ store }) {
               </label>
             </fieldset>
           </div>
-          <p className="settings-note">Estos métodos quedan Pendientes de validar hasta que caja confirme el abono. CoDi/DiMo pueden operar mostrando QR/datos; una integración bancaria automática requerirá las credenciales que entregue el banco.</p>
+          <p className="settings-note">Estos mÃ©todos quedan Pendientes de validar hasta que caja confirme el abono. CoDi/DiMo pueden operar mostrando QR/datos; una integraciÃ³n bancaria automÃ¡tica requerirÃ¡ las credenciales que entregue el banco.</p>
           <button className="primary" onClick={save}>
-            Guardar métodos
+            Guardar mÃ©todos
           </button>
         </section>
       )}
@@ -2067,7 +2318,7 @@ function ConfigurationCenter({ store }) {
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
-              <small>Terminal física</small>
+              <small>Terminal fÃ­sica</small>
               <h2>Pago con tarjeta en caja</h2>
             </div>
           </div>
@@ -2117,7 +2368,7 @@ function ConfigurationCenter({ store }) {
               </label>
             </fieldset>
           </div>
-          <p className="settings-note">Con terminal externa, el cajero debe confirmar la autorización antes de registrar el pago. Una terminal integrada requerirá credenciales y SDK del proveedor.</p>
+          <p className="settings-note">Con terminal externa, el cajero debe confirmar la autorizaciÃ³n antes de registrar el pago. Una terminal integrada requerirÃ¡ credenciales y SDK del proveedor.</p>
           <button className="primary" onClick={save}>
             Guardar tarjeta en caja
           </button>
@@ -2155,8 +2406,8 @@ function CustomersModule({ customers }) {
               <small>{customer.phone}</small>
             </div>
             <div>
-              <small>{customer.address ? "Dirección" : "Tipo de venta"}</small>
-              <p>{customer.address || "Para llevar · sin dirección"}</p>
+              <small>{customer.address ? "DirecciÃ³n" : "Tipo de venta"}</small>
+              <p>{customer.address || "Para llevar Â· sin direcciÃ³n"}</p>
             </div>
             <div>
               <b>{customer.orders}</b>
@@ -2220,10 +2471,10 @@ function ReportsModule({ store }) {
     return start < end ? hour >= start && hour < end : hour >= start || hour < end;
   });
   const cash = filtered.filter((o) => o.payment === "Efectivo").reduce((s, o) => s + o.total, 0);
-  const card = filtered.filter((o) => ["Tarjeta", "Transferencia / Depósito"].includes(o.payment)).reduce((s, o) => s + o.total, 0);
+  const card = filtered.filter((o) => ["Tarjeta", "Transferencia / DepÃ³sito"].includes(o.payment)).reduce((s, o) => s + o.total, 0);
   const total = cash + card;
   const ticket = filtered.length ? total / filtered.length : 0;
-  const rangeLabel = period === "turno" ? `${referenceDate} · ${shift}` : rangeStart === rangeEnd ? rangeStart : `${rangeStart} al ${rangeEnd}`;
+  const rangeLabel = period === "turno" ? `${referenceDate} Â· ${shift}` : rangeStart === rangeEnd ? rangeStart : `${rangeStart} al ${rangeEnd}`;
   return (
     <div className="reports-module">
       <section className="dash-card report-filters">
@@ -2301,7 +2552,7 @@ function ReportsModule({ store }) {
       </div>
       <div className="report-grid">
         <article className="dash-card">
-          <small>Ventas por método</small>
+          <small>Ventas por mÃ©todo</small>
           <h2>{money(total)}</h2>
           <div className="payment-bar">
             <span style={{ width: `${total ? (cash / total) * 100 : 0}%` }} />
@@ -2314,7 +2565,7 @@ function ReportsModule({ store }) {
           </p>
         </article>
         <article className="dash-card">
-          <small>Desempeño operativo</small>
+          <small>DesempeÃ±o operativo</small>
           <h2>{filtered.length} pedidos</h2>
           <div className="metric-line">
             <span>Pagados</span>
@@ -2346,7 +2597,7 @@ function ReportsModule({ store }) {
               <div key={order.id}>
                 <b>#{order.id}</b>
                 <span>
-                  {orderDate(order)} · {order.createdAt}
+                  {orderDate(order)} Â· {order.createdAt}
                 </span>
                 <strong>{order.customer}</strong>
                 <span>{order.payment}</span>
@@ -2449,11 +2700,11 @@ function PointOfSale({ store, close }) {
   }, [timing, scheduleSlots, scheduledTime]);
   const scheduleReady = timing === "Ahora" || (scheduledDate && scheduledTime);
   const cashChange = Math.max(0, Number(cashTendered || 0) - total);
-  const paymentReady = payment === "Efectivo" ? cashConfirmed && Number(cashTendered) >= total : ["Transferencia / Depósito", "Pago con QR", "CoDi", "DiMo", "Tarjeta en caja"].includes(payment) && transferValidated;
+  const paymentReady = payment === "Efectivo" ? cashConfirmed && Number(cashTendered) >= total : ["Transferencia / DepÃ³sito", "Pago con QR", "CoDi", "DiMo", "Tarjeta en caja"].includes(payment) && transferValidated;
   const complete = async () => {
     if (submitting || !paymentReady) return;
     setSubmitting(true);
-    const scheduleLabel = timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`;
+    const scheduleLabel = timing === "Ahora" ? "Ahora" : `${scheduledDate} Â· ${scheduledTime}`;
     try {
       const order = await store.createOrder({
         source: "pos",
@@ -2591,7 +2842,7 @@ function PointOfSale({ store, close }) {
                   </div>
                   {line.category === "Pizzas" && (
                     <label className="pos-size">
-                      Tamaño
+                      TamaÃ±o
                       <select value={line.size} onChange={(e) => updateLineSize(line.id, e.target.value)}>
                         {Object.keys(pizzaSizeAdjustments).map((size) => (
                           <option key={size}>{size}</option>
@@ -2617,13 +2868,13 @@ function PointOfSale({ store, close }) {
         <div className="pos-form-step">
           <span className="eyebrow">Paso 2</span>
           <h2>Tipo de entrega y datos del cliente</h2>
-          <p>Primero selecciona cómo se entregará el pedido.</p>
+          <p>Primero selecciona cÃ³mo se entregarÃ¡ el pedido.</p>
           <div className="service-options">
             <button className={serviceType === "Recoger en restaurante" ? "active" : ""} onClick={() => changeServiceType("Recoger en restaurante")}>
-              <ShoppingBag /> 🏪 Recoger en restaurante
+              <ShoppingBag /> ðŸª Recoger en restaurante
             </button>
             <button className={serviceType === "Domicilio" ? "active" : ""} onClick={() => changeServiceType("Domicilio")}>
-              <Bike /> 🛵 Entrega a domicilio
+              <Bike /> ðŸ›µ Entrega a domicilio
             </button>
           </div>
           {serviceType && (
@@ -2644,7 +2895,7 @@ function PointOfSale({ store, close }) {
               {serviceType === "Domicilio" && (
                 <>
                   <label>
-                    Teléfono
+                    TelÃ©fono
                     <input
                       value={customerData.phone}
                       onChange={(e) =>
@@ -2656,7 +2907,7 @@ function PointOfSale({ store, close }) {
                     />
                   </label>
                   <label>
-                    Costo de envío
+                    Costo de envÃ­o
                     <input
                       type="number"
                       min="0"
@@ -2670,7 +2921,7 @@ function PointOfSale({ store, close }) {
                     />
                   </label>
                   <label className="full">
-                    Dirección completa
+                    DirecciÃ³n completa
                     <input
                       value={customerData.address}
                       onChange={(e) =>
@@ -2679,11 +2930,11 @@ function PointOfSale({ store, close }) {
                           address: e.target.value,
                         })
                       }
-                      placeholder="Calle, número, colonia, ciudad"
+                      placeholder="Calle, nÃºmero, colonia, ciudad"
                     />
                   </label>
                   <label className="full">
-                    Referencias de ubicación
+                    Referencias de ubicaciÃ³n
                     <input
                       value={customerData.reference}
                       onChange={(e) =>
@@ -2692,7 +2943,7 @@ function PointOfSale({ store, close }) {
                           reference: e.target.value,
                         })
                       }
-                      placeholder="Entre calles, color del portón, indicaciones"
+                      placeholder="Entre calles, color del portÃ³n, indicaciones"
                     />
                   </label>
                 </>
@@ -2700,7 +2951,7 @@ function PointOfSale({ store, close }) {
             </div>
           )}
           <div className="schedule-card">
-            <h3>¿Para cuándo?</h3>
+            <h3>Â¿Para cuÃ¡ndo?</h3>
             <div className="service-options">
               <button className={timing === "Ahora" ? "active" : ""} onClick={() => setTiming("Ahora")}>
                 <Clock3 /> Ahora
@@ -2740,32 +2991,32 @@ function PointOfSale({ store, close }) {
       {step === 3 && (
         <div className="sale-review">
           <section className="kitchen-print">
-            <div className="ticket-logo">🔥 {store.business.brandName}</div>
+            <div className="ticket-logo">ðŸ”¥ {store.business.brandName}</div>
             <h2>RESUMEN DE LA ORDEN</h2>
-            <p className="ticket-meta">Todavía no se ha impreso ni enviado ninguna comanda</p>
+            <p className="ticket-meta">TodavÃ­a no se ha impreso ni enviado ninguna comanda</p>
             <div className="ticket-customer">
               <small>CLIENTE</small>
               <b>{customerData.customer}</b>
             </div>
             <div className="ticket-delivery">
               <b>{serviceType}</b>
-              <span>{serviceType === "Domicilio" ? `${customerData.phone} · ${customerData.address}` : "Recoge en sucursal"}</span>
-              <span>{timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`}</span>
+              <span>{serviceType === "Domicilio" ? `${customerData.phone} Â· ${customerData.address}` : "Recoge en sucursal"}</span>
+              <span>{timing === "Ahora" ? "Ahora" : `${scheduledDate} Â· ${scheduledTime}`}</span>
             </div>
             <div className="ticket-lines">
               {lines.map((line) => (
                 <article key={line.id}>
                   <b>
-                    {line.qty}× {line.name}
-                    {line.size ? ` · ${line.size}` : ""}
+                    {line.qty}Ã— {line.name}
+                    {line.size ? ` Â· ${line.size}` : ""}
                   </b>
                   <span>{money(line.price * line.qty)}</span>
-                  {line.note && <strong>INDICACIÓN: {line.note}</strong>}
+                  {line.note && <strong>INDICACIÃ“N: {line.note}</strong>}
                 </article>
               ))}
             </div>
             <footer>
-              <span>Envío: {money(delivery)}</span>
+              <span>EnvÃ­o: {money(delivery)}</span>
               <b>Total: {money(total)}</b>
             </footer>
           </section>
@@ -2783,7 +3034,7 @@ function PointOfSale({ store, close }) {
                 <Check /> Cliente: {customerData.customer}
               </li>
               <li>
-                <Printer /> La impresión ocurrirá después del cobro
+                <Printer /> La impresiÃ³n ocurrirÃ¡ despuÃ©s del cobro
               </li>
             </ol>
             <button className="primary wide" onClick={() => setStep(4)}>
@@ -2806,27 +3057,27 @@ function PointOfSale({ store, close }) {
             </div>
             <div className="payment-summary">
               <p>
-                <b>Tipo de entrega:</b> {serviceType === "Domicilio" ? "🛵 Entrega a domicilio" : "🏪 Recoger en restaurante"}
+                <b>Tipo de entrega:</b> {serviceType === "Domicilio" ? "ðŸ›µ Entrega a domicilio" : "ðŸª Recoger en restaurante"}
               </p>
               <p>
-                <b>¿Para cuándo?</b> {timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`}
+                <b>Â¿Para cuÃ¡ndo?</b> {timing === "Ahora" ? "Ahora" : `${scheduledDate} Â· ${scheduledTime}`}
               </p>
             </div>
-            <h3>Método de pago</h3>
+            <h3>MÃ©todo de pago</h3>
             <div className="payment-options">
               <button
-                className={payment === "Transferencia / Depósito" ? "active" : ""}
+                className={payment === "Transferencia / DepÃ³sito" ? "active" : ""}
                 onClick={() => {
-                  setPayment("Transferencia / Depósito");
+                  setPayment("Transferencia / DepÃ³sito");
                   setCashConfirmed(false);
                 }}
               >
                 <CreditCard />
                 <span>
-                  <b>💳 Transferencia / Depósito</b>
-                  <small>Requiere validación</small>
+                  <b>ðŸ’³ Transferencia / DepÃ³sito</b>
+                  <small>Requiere validaciÃ³n</small>
                 </span>
-                {payment === "Transferencia / Depósito" && <Check />}
+                {payment === "Transferencia / DepÃ³sito" && <Check />}
               </button>
               <button
                 className={payment === "Efectivo" ? "active" : ""}
@@ -2837,7 +3088,7 @@ function PointOfSale({ store, close }) {
               >
                 <Wallet />
                 <span>
-                  <b>🤝 Efectivo</b>
+                  <b>ðŸ¤ Efectivo</b>
                   <small>Cobro en caja</small>
                 </span>
                 {payment === "Efectivo" && <Check />}
@@ -2854,7 +3105,7 @@ function PointOfSale({ store, close }) {
                   <CreditCard />
                   <span>
                     <b>Tarjeta en caja</b>
-                    <small>Confirmar autorización</small>
+                    <small>Confirmar autorizaciÃ³n</small>
                   </span>
                   {payment === "Tarjeta en caja" && <Check />}
                 </button>
@@ -2884,7 +3135,7 @@ function PointOfSale({ store, close }) {
                   </button>
                 ))}
             </div>
-            {["Transferencia / Depósito", "Pago con QR", "CoDi", "DiMo"].includes(payment) && (
+            {["Transferencia / DepÃ³sito", "Pago con QR", "CoDi", "DiMo"].includes(payment) && (
               <div className="transfer-panel">
                 <div>
                   <small>Titular</small>
@@ -2908,7 +3159,7 @@ function PointOfSale({ store, close }) {
                     <b>{settings.cardNumber}</b>
                   </div>
                 )}
-                {settings.paymentQr && <img src={settings.paymentQr} alt="Código QR de pago" />}
+                {settings.paymentQr && <img src={settings.paymentQr} alt="CÃ³digo QR de pago" />}
                 <label className="full">
                   Comprobante (opcional)
                   <input type="file" accept="image/*,.pdf" onChange={(e) => setProof(e.target.files?.[0]?.name || "")} />
@@ -2917,7 +3168,7 @@ function PointOfSale({ store, close }) {
                 <div className="payment-validation">
                   <span className={`status ${transferValidated ? "entregado" : "nuevo"}`}>{transferValidated ? "Pagado" : "Pendiente de validar"}</span>
                   <label className="inline-check">
-                    <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que el negocio validó el pago
+                    <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que el negocio validÃ³ el pago
                   </label>
                 </div>
               </div>
@@ -2925,7 +3176,7 @@ function PointOfSale({ store, close }) {
             {payment === "Tarjeta en caja" && (
               <div className="cash-payment-panel">
                 <label className="inline-check">
-                  <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que la terminal autorizó el pago
+                  <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que la terminal autorizÃ³ el pago
                 </label>
               </div>
             )}
@@ -2949,9 +3200,9 @@ function PointOfSale({ store, close }) {
                   <b>{money(cashChange)}</b>
                 </div>
                 <label className="inline-check">
-                  <input type="checkbox" checked={cashConfirmed} disabled={Number(cashTendered) < total} onChange={(e) => setCashConfirmed(e.target.checked)} /> Confirmo que recibí el efectivo
+                  <input type="checkbox" checked={cashConfirmed} disabled={Number(cashTendered) < total} onChange={(e) => setCashConfirmed(e.target.checked)} /> Confirmo que recibÃ­ el efectivo
                 </label>
-                {settings.cashDrawerEnabled && !settings.cashDrawerCompatible && <p className="drawer-warning">El cajón no se abrirá físicamente hasta marcarlo como compatible en Configuración POS.</p>}
+                {settings.cashDrawerEnabled && !settings.cashDrawerCompatible && <p className="drawer-warning">El cajÃ³n no se abrirÃ¡ fÃ­sicamente hasta marcarlo como compatible en ConfiguraciÃ³n POS.</p>}
               </div>
             )}
           </section>
@@ -2962,13 +3213,13 @@ function PointOfSale({ store, close }) {
                 <CircleDollarSign /> Se registra la venta como Pagada
               </li>
               <li>
-                <Wallet /> El cajón abre solo si el pago es efectivo
+                <Wallet /> El cajÃ³n abre solo si el pago es efectivo
               </li>
               <li>
-                <ChefHat /> Se envía la comanda de cocina
+                <ChefHat /> Se envÃ­a la comanda de cocina
               </li>
               <li>
-                <PackageCheck /> Se envía la comanda de barra
+                <PackageCheck /> Se envÃ­a la comanda de barra
               </li>
               <li>
                 <Printer /> Se imprime el ticket completo en caja
@@ -2990,7 +3241,7 @@ function PointOfSale({ store, close }) {
           </span>
           <h2>Venta #{result.id} confirmada</h2>
           <p>
-            El pedido quedó <b>Pagado</b> y fue enviado a las áreas correspondientes.
+            El pedido quedÃ³ <b>Pagado</b> y fue enviado a las Ã¡reas correspondientes.
           </p>
           <div className="print-results">
             <article>
@@ -3014,8 +3265,8 @@ function PointOfSale({ store, close }) {
             )}
             <article>
               <Wallet />
-              <b>Cajón de dinero</b>
-              <small>{payment !== "Efectivo" ? "No aplica" : result.drawerOpened ? "Apertura solicitada" : "Sin apertura física"}</small>
+              <b>CajÃ³n de dinero</b>
+              <small>{payment !== "Efectivo" ? "No aplica" : result.drawerOpened ? "Apertura solicitada" : "Sin apertura fÃ­sica"}</small>
             </article>
           </div>
           <button className="primary" onClick={close}>
@@ -3028,9 +3279,9 @@ function PointOfSale({ store, close }) {
 }
 
 function ProductionView({ store }) {
-  const [active, setActive] = useState("Producción");
+  const [active, setActive] = useState("ProducciÃ³n");
   return (
-    <DashboardShell active={active} setActive={setActive} moduleItems={[[active, CookingPot]]} title="Cocina / Comandas" subtitle="Solo productos que requieren preparación en cocina.">
+    <DashboardShell active={active} setActive={setActive} moduleItems={[[active, CookingPot]]} title="Cocina / Comandas" subtitle="Solo productos que requieren preparaciÃ³n en cocina.">
       <ProductionBoard store={store} />
     </DashboardShell>
   );
@@ -3052,7 +3303,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
   const routeLayer = useRef(null);
   const locationMarker = useRef(null);
   const [location, setLocation] = useState(null);
-  const [locationStatus, setLocationStatus] = useState("Solicitando ubicación del dispositivo…");
+  const [locationStatus, setLocationStatus] = useState("Solicitando ubicaciÃ³n del dispositivoâ€¦");
 
   useEffect(() => {
     if (!mapElement.current || mapInstance.current) return;
@@ -3074,10 +3325,10 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
         }),
       };
       setLocation(next);
-      setLocationStatus("Ubicación en tiempo real activa");
+      setLocationStatus("UbicaciÃ³n en tiempo real activa");
       const icon = L.divIcon({
         className: "leaflet-live-icon",
-        html: "<span>●</span>",
+        html: "<span>â—</span>",
         iconSize: [28, 28],
         iconAnchor: [14, 14],
       });
@@ -3088,9 +3339,9 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
           zIndexOffset: 1000,
         })
           .addTo(map)
-          .bindTooltip("Tu ubicación actual");
+          .bindTooltip("Tu ubicaciÃ³n actual");
     });
-    map.on("locationerror", () => setLocationStatus("No fue posible obtener la ubicación. Revisa el permiso GPS."));
+    map.on("locationerror", () => setLocationStatus("No fue posible obtener la ubicaciÃ³n. Revisa el permiso GPS."));
     mapInstance.current = map;
     map.locate({
       watch: true,
@@ -3123,7 +3374,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
       });
       L.marker(order.coordinates, { icon })
         .addTo(orderLayer.current)
-        .bindTooltip(`#${order.id} · ${order.customer}`)
+        .bindTooltip(`#${order.id} Â· ${order.customer}`)
         .on("click", () => onSelect(order.id));
     });
     if (!location && points.length) map.fitBounds(L.latLngBounds(points).pad(0.18), { maxZoom: 14 });
@@ -3169,13 +3420,13 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
           </span>
           <div>
             <small>{locationStatus}</small>
-            <b>{location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)} · ±${Math.round(location.accuracy)} m` : "Centro inicial: Tijuana, B.C."}</b>
+            <b>{location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)} Â· Â±${Math.round(location.accuracy)} m` : "Centro inicial: Tijuana, B.C."}</b>
             {location && <em>Actualizado {location.updatedAt}</em>}
           </div>
         </div>
         <div className="real-map-actions">
           <button onClick={centerLocation}>
-            <LocateFixed /> Mi ubicación
+            <LocateFixed /> Mi ubicaciÃ³n
           </button>
           <button onClick={centerDestination} disabled={!selectedOrder}>
             <MapPin /> Ver destino
@@ -3194,8 +3445,8 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
 function DriverView({ store }) {
   const [tab, setTab] = useState("Por entregar");
   const [selectedStop, setSelectedStop] = useState(null);
-  const deliveryOrders = store.orders.filter((o) => isDeliveryOrder(o) && o.driver === "Roberto Gómez");
-  const activeOrders = deliveryOrders.filter((o) => ["Recibido", "Confirmado", "En preparación", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
+  const deliveryOrders = store.orders.filter((o) => isDeliveryOrder(o) && o.driver === "Roberto GÃ³mez");
+  const activeOrders = deliveryOrders.filter((o) => ["Recibido", "Confirmado", "En preparaciÃ³n", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
   const history = deliveryOrders.filter((o) => o.status === "Entregado");
   const positions = [
     ["24%", "24%"],
@@ -3206,11 +3457,11 @@ function DriverView({ store }) {
   ];
   const selectedOrder = activeOrders.find((order) => order.id === selectedStop) || activeOrders.find((order) => order.status === "En ruta") || activeOrders[0];
   const advance = (order) => {
-    if (["Recibido", "Confirmado", "En preparación"].includes(order.status)) return;
+    if (["Recibido", "Confirmado", "En preparaciÃ³n"].includes(order.status)) return;
     const status = ["Listo para enviar", "Asignado a repartidor"].includes(order.status) ? "En ruta" : "Entregado";
     store.updateOrder(order.id, {
       status,
-      driver: "Roberto Gómez",
+      driver: "Roberto GÃ³mez",
       paid: status === "Entregado" ? true : order.paid,
     });
   };
@@ -3218,14 +3469,14 @@ function DriverView({ store }) {
     <main className="driver-view driver-portal">
       <section className="driver-top">
         <div>
-          <span className="eyebrow">Servicio a domicilio · Turno activo</span>
+          <span className="eyebrow">Servicio a domicilio Â· Turno activo</span>
           <h1>Portal repartidor</h1>
           <p>Hola, Roberto. Tienes {activeOrders.length} servicios por completar.</p>
         </div>
         <div className="driver-score">
           <Star fill="currentColor" />
           <b>4.96</b>
-          <small>Calificación</small>
+          <small>CalificaciÃ³n</small>
         </div>
       </section>
       <nav className="driver-nav">
@@ -3249,7 +3500,7 @@ function DriverView({ store }) {
             </div>
             <div className="queue-counters">
               <span>
-                <i className="cooking" /> En preparación {activeOrders.filter((o) => ["Recibido", "Confirmado", "En preparación"].includes(o.status)).length}
+                <i className="cooking" /> En preparaciÃ³n {activeOrders.filter((o) => ["Recibido", "Confirmado", "En preparaciÃ³n"].includes(o.status)).length}
               </span>
               <span>
                 <i className="route" /> En ruta {activeOrders.filter((o) => o.status === "En ruta").length}
@@ -3310,7 +3561,7 @@ function DriverView({ store }) {
                     </button>
                   ) : (
                     <small className="delivery-waiting">
-                      <CookingPot /> Esperando preparación del pedido
+                      <CookingPot /> Esperando preparaciÃ³n del pedido
                     </small>
                   )}
                 </article>
@@ -3350,7 +3601,7 @@ function DriverView({ store }) {
             <b>{history.length} entregas</b>
           </div>
           {history.length === 0 ? (
-            <Empty text="Todavía no hay entregas completadas" />
+            <Empty text="TodavÃ­a no hay entregas completadas" />
           ) : (
             history.map((order) => (
               <article key={order.id}>
@@ -3359,7 +3610,7 @@ function DriverView({ store }) {
                 </span>
                 <div>
                   <b>
-                    #{order.id} · {order.customer}
+                    #{order.id} Â· {order.customer}
                   </b>
                   <small>
                     <MapPin /> {order.address}
@@ -3400,9 +3651,22 @@ function Empty({ text }) {
   );
 }
 
+const readPortalMode = () => {
+  const hash = globalThis.location?.hash?.toLowerCase() || "";
+  return ["#mkt", "#marketing", "#diagnostico", "#diagnostico-mkt"].includes(hash) ? "marketing" : "main";
+};
+
 export default function App() {
   const store = useRestaurantStore();
   const alertSnapshot = useRef(null);
+  const [portalMode, setPortalMode] = useState(() => readPortalMode());
+
+  useEffect(() => {
+    const syncPortal = () => setPortalMode(readPortalMode());
+    globalThis.addEventListener("hashchange", syncPortal);
+    return () => globalThis.removeEventListener("hashchange", syncPortal);
+  }, []);
+
   useEffect(() => {
     if (!store.token || !store.orders.length) return;
     const next = new globalThis.Map(store.orders.map((order) => [order.dbId, order.status]));
@@ -3411,9 +3675,9 @@ export default function App() {
       const hasReady = store.orders.some((order) => alertSnapshot.current.get(order.dbId) !== order.status && ["Listo para recoger", "Listo para enviar"].includes(order.status));
       if (hasNew || hasReady) {
         try {
-          const context = new AudioContext(),
-            oscillator = context.createOscillator(),
-            gain = context.createGain();
+          const context = new AudioContext();
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
           oscillator.frequency.value = hasReady ? 880 : 620;
           gain.gain.value = 0.08;
           oscillator.connect(gain);
@@ -3421,27 +3685,48 @@ export default function App() {
           oscillator.start();
           oscillator.stop(context.currentTime + (hasReady ? 0.32 : 0.18));
         } catch {
-          /* El navegador puede requerir interacción previa. */
+          /* El navegador puede requerir interaccion previa. */
         }
       }
     }
     alertSnapshot.current = next;
   }, [store.orders, store.token]);
-  const savedRole = readLocal("fuego-active-role");
-  const [role, setRoleState] = useState(savedRole || "cliente"),
-    [sessionOpen, setSessionOpen] = useState(!savedRole || (savedRole !== "cliente" && !store.token)),
-    [cart, setCart] = useState([]),
-    [showCart, setShowCart] = useState(false);
+
+  const savedRole = readLocal("mi-menu-suite-active-role") || readLocal("fuego-active-role");
+  const initialRole = portalMode === "marketing" ? "marketing" : savedRole && savedRole !== "marketing" ? savedRole : "cliente";
+  const [role, setRoleState] = useState(initialRole);
+  const [sessionOpen, setSessionOpen] = useState(portalMode === "marketing" ? true : !savedRole || (savedRole !== "cliente" && !store.token));
+  const [cart, setCart] = useState([]);
+  const [showCart, setShowCart] = useState(false);
+
+  useEffect(() => {
+    if (portalMode === "marketing") {
+      setRoleState("marketing");
+      setSessionOpen(!store.token || store.currentUser?.role !== "marketing");
+      return;
+    }
+    if (role === "marketing") {
+      setRoleState(savedRole && savedRole !== "marketing" ? savedRole : "cliente");
+    }
+  }, [portalMode, role, savedRole, store.currentUser?.role, store.token]);
+
   const setRole = (nextRole) => {
-    writeLocal("fuego-active-role", nextRole);
+    if (portalMode === "main" && nextRole !== "marketing") {
+      writeLocal("mi-menu-suite-active-role", nextRole);
+      writeLocal("fuego-active-role", nextRole);
+    }
     setRoleState(nextRole);
   };
+
   useEffect(() => {
-    document.title = `${store.business.brandName} · Pedidos y POS`;
-  }, [store.business.brandName]);
+    document.title = portalMode === "marketing" ? "Mi Menu Suite · Portal de diagnostico" : `${store.business.brandName} · Pedidos y POS`;
+  }, [portalMode, store.business.brandName]);
+
   useEffect(() => {
+    if (portalMode === "marketing") return;
     if (role !== "cliente" && !store.token) setSessionOpen(true);
-  }, [role, store.token]);
+  }, [portalMode, role, store.token]);
+
   const cartCount = useMemo(() => cart.reduce((n, row) => n + row.qty, 0), [cart]);
   const addItem = (product) => {
     setCart((rows) =>
@@ -3479,19 +3764,33 @@ export default function App() {
     setCart([]);
     return order;
   };
+
   if (store.loading)
     return (
       <div className="app-state">
-        <span>🔥</span>
-        <h1>Preparando {store.business.brandName}</h1>
-        <p>Conectando con la base de datos…</p>
+        <span>🍽️</span>
+        <h1>Preparando Mi Menu Suite</h1>
+        <p>Conectando con la base de datos...</p>
       </div>
     );
+
   return (
     <div className="app">
-      <Header role={role} openSessions={() => setSessionOpen(true)} cartCount={cartCount} onCart={() => setShowCart(true)} business={store.business} />
+      <Header role={role} openSessions={() => setSessionOpen(true)} cartCount={cartCount} onCart={() => setShowCart(true)} business={store.business} portalMode={portalMode} />
       {store.error && <div className="api-warning">No fue posible actualizar los datos: {store.error}</div>}
-      {sessionOpen && <SessionSelector role={role} setRole={setRole} close={() => setSessionOpen(false)} store={store} />} {role === "cliente" && <CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder} createStripeCheckout={store.createStripeCheckout} business={store.business} posSettings={store.posSettings} />} {role === "administrador" && store.token && <AdminView store={store} />} {role === "cajero" && store.token && <CashierView store={store} />} {role === "produccion" && store.token && <ProductionView store={store} />} {role === "barra" && store.token && <BarView store={store} />} {role === "repartidor" && store.token && <DriverView store={store} />}
+      {sessionOpen && <SessionSelector role={role} setRole={setRole} close={() => setSessionOpen(false)} store={store} portalMode={portalMode} />}
+      {portalMode === "marketing" ? (
+        role === "marketing" && store.token && <MarketingPortalView store={store} />
+      ) : (
+        <>
+          {role === "cliente" && <CustomerView products={store.products} cart={cart} addItem={addItem} changeQty={changeQty} updateNote={updateNote} updateSize={updateSize} showCart={showCart} setShowCart={setShowCart} createOrder={createOrder} createStripeCheckout={store.createStripeCheckout} business={store.business} posSettings={store.posSettings} />}
+          {role === "administrador" && store.token && <AdminView store={store} />}
+          {role === "cajero" && store.token && <CashierView store={store} />}
+          {role === "produccion" && store.token && <ProductionView store={store} />}
+          {role === "barra" && store.token && <BarView store={store} />}
+          {role === "repartidor" && store.token && <DriverView store={store} />}
+        </>
+      )}
     </div>
   );
 }

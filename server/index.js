@@ -439,9 +439,189 @@ app.post("/api/auth/login", async (req, res, next) => {
 
 app.get("/api/bootstrap", authenticate, async (req, res, next) => {
   try {
+    if (req.auth.role === "marketing") {
+      const business = await businessData();
+      return res.json({
+        business,
+        products: [],
+        orders: [],
+        customers: [],
+        cashRegister: {
+          open: false,
+          openedAt: null,
+          openingAmount: 0,
+          openingOrderIds: [],
+          movements: [],
+          cuts: [],
+          pendingPayments: [],
+        },
+        posSettings: {},
+      });
+    }
     res.json(await bootstrap(`${req.protocol}://${req.get("host")}`, true));
   } catch (error) {
     next(error);
+  }
+});
+
+async function discoveryQuestionsData() {
+  const [rows] = await pool.query(
+    `SELECT code,block_code,block_title,sort_order,question_text
+     FROM business_discovery_questions WHERE active=TRUE ORDER BY sort_order`,
+  );
+  return rows.map((row) => ({
+    code: row.code,
+    blockCode: row.block_code,
+    blockTitle: row.block_title,
+    sortOrder: Number(row.sort_order),
+    text: row.question_text,
+  }));
+}
+
+async function discoverySubmissionData(id, businessId) {
+  const [[row]] = await pool.query(
+    `SELECT s.*,u.full_name created_by_name
+     FROM business_discovery_submissions s
+     LEFT JOIN users u ON u.id=s.created_by_user_id
+     WHERE s.id=? AND s.business_id=?`,
+    [id, businessId],
+  );
+  if (!row) return null;
+  const [answers] = await pool.query(
+    `SELECT question_code,answer_text FROM business_discovery_answers
+     WHERE submission_id=? ORDER BY question_code`,
+    [row.id],
+  );
+  return {
+    id: row.id,
+    publicId: row.public_id,
+    businessName: row.business_name,
+    respondentName: row.respondent_name,
+    respondentRole: row.respondent_role || "",
+    phone: row.phone || "",
+    email: row.email || "",
+    status: row.status,
+    totalQuestions: Number(row.total_questions),
+    answeredQuestions: Number(row.answered_questions),
+    createdByName: row.created_by_name || "",
+    completedAt: row.completed_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    answers: Object.fromEntries(answers.map((answer) => [answer.question_code, answer.answer_text])),
+  };
+}
+
+app.get("/api/discovery/questions", authenticate, allow("administrator", "marketing"), async (req, res, next) => {
+  try {
+    res.json(await discoveryQuestionsData());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/discovery/submissions", authenticate, allow("administrator"), async (req, res, next) => {
+  try {
+    const business = await businessData();
+    const [rows] = await pool.query(
+      `SELECT s.id,s.public_id,s.business_name,s.respondent_name,s.respondent_role,s.phone,s.email,s.status,
+        s.total_questions,s.answered_questions,s.completed_at,s.created_at,s.updated_at,u.full_name created_by_name
+       FROM business_discovery_submissions s
+       LEFT JOIN users u ON u.id=s.created_by_user_id
+       WHERE s.business_id=? ORDER BY s.created_at DESC LIMIT 100`,
+      [business.businessId],
+    );
+    res.json(
+      rows.map((row) => ({
+        id: row.id,
+        publicId: row.public_id,
+        businessName: row.business_name,
+        respondentName: row.respondent_name,
+        respondentRole: row.respondent_role || "",
+        phone: row.phone || "",
+        email: row.email || "",
+        status: row.status,
+        totalQuestions: Number(row.total_questions),
+        answeredQuestions: Number(row.answered_questions),
+        completedAt: row.completed_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        createdByName: row.created_by_name || "",
+      })),
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/discovery/submissions/:id", authenticate, allow("administrator"), async (req, res, next) => {
+  try {
+    const business = await businessData();
+    const submission = await discoverySubmissionData(Number(req.params.id), business.businessId);
+    if (!submission) return res.status(404).json({ error: "Diagnóstico no encontrado." });
+    res.json(submission);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/discovery/submissions", authenticate, allow("administrator", "marketing"), async (req, res, next) => {
+  const connection = await pool.getConnection();
+  try {
+    const business = await businessData();
+    const payload = req.body || {};
+    const businessName = String(payload.businessName || "").trim();
+    const respondentName = String(payload.respondentName || "").trim();
+    if (!businessName || !respondentName) return res.status(400).json({ error: "El negocio y la persona entrevistada son obligatorios." });
+
+    const [questions] = await connection.query("SELECT code FROM business_discovery_questions WHERE active=TRUE ORDER BY sort_order");
+    const validCodes = new Set(questions.map((question) => question.code));
+    const answers = Object.entries(payload.answers || {})
+      .map(([code, value]) => [code, String(value || "").trim()])
+      .filter(([code, value]) => validCodes.has(code) && value);
+    const status = payload.status === "completed" ? "completed" : "draft";
+
+    await connection.beginTransaction();
+    const [created] = await connection.execute(
+      `INSERT INTO business_discovery_submissions
+       (public_id,business_id,branch_id,business_name,respondent_name,respondent_role,phone,email,status,total_questions,answered_questions,created_by_user_id,completed_at)
+       VALUES(UUID(),?,?,?,?,?,?,?,?,?,?,?,IF(?='completed',UTC_TIMESTAMP(3),NULL))`,
+      [
+        business.businessId,
+        business.branchId,
+        businessName,
+        respondentName,
+        String(payload.respondentRole || "").trim() || null,
+        String(payload.phone || "").trim() || null,
+        String(payload.email || "").trim() || null,
+        status,
+        questions.length,
+        answers.length,
+        req.auth.sub,
+        status,
+      ],
+    );
+    for (const [code, value] of answers) {
+      await connection.execute(
+        "INSERT INTO business_discovery_answers(submission_id,question_code,answer_text) VALUES(?,?,?)",
+        [created.insertId, code, value],
+      );
+    }
+    await audit(connection, {
+      businessId: business.businessId,
+      branchId: business.branchId,
+      userId: req.auth.sub,
+      action: "business_discovery.created",
+      entityType: "business_discovery_submission",
+      entityId: created.insertId,
+      newValues: { businessName, respondentName, status, answeredQuestions: answers.length },
+    });
+    await connection.commit();
+    res.status(201).json(await discoverySubmissionData(created.insertId, business.businessId));
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
   }
 });
 

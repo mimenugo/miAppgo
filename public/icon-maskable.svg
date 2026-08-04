@@ -1,7 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#ff5a1f"/>
-  <g transform="translate(46 46) scale(.82)">
-    <path d="M281 64c24 89-54 103-25 169 18-31 40-53 35-102 85 69 114 143 87 220-20 58-72 97-131 97-73 0-133-59-133-132 0-66 45-101 89-150 4 45 21 66 43 73-18-74 49-91 35-175Z" fill="#fff"/>
-    <path d="M262 279c45 37 51 75 31 105-14 21-48 27-71 10-25-18-29-54-11-79 10-14 23-24 36-39 0 22 5 35 15 42 4-14 5-26 0-39Z" fill="#ffb020"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mi Menu maskable">
+  <defs>
+    <linearGradient id="mask-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ff7a2f"/>
+      <stop offset="100%" stop-color="#e8481d"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#mask-bg)"/>
+  <rect x="124" y="110" width="264" height="300" rx="52" fill="#fff8ef"/>
+  <rect x="152" y="146" width="208" height="46" rx="16" fill="#ffe2cf"/>
+  <circle cx="184" cy="169" r="12" fill="#f65a1c"/>
+  <circle cx="224" cy="169" r="12" fill="#f65a1c"/>
+  <circle cx="264" cy="169" r="12" fill="#f65a1c"/>
+  <rect x="164" y="224" width="180" height="24" rx="12" fill="#f65a1c" opacity=".18"/>
+  <rect x="164" y="266" width="152" height="24" rx="12" fill="#f65a1c" opacity=".18"/>
+  <rect x="164" y="308" width="126" height="24" rx="12" fill="#f65a1c" opacity=".18"/>
+  <circle cx="326" cy="310" r="34" fill="#1db56c"/>
+  <path d="M310 311l12 12 20-26" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="14"/>
+  <text x="256" y="378" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="48" font-weight="800" fill="#f65a1c">Mi</text>
 </svg>

@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "Gastro Suite · Pedidos y POS",
-  "short_name": "Gastro Suite",
-  "description": "Pedidos, producción y entregas para restaurantes.",
+  "name": "Mi Menu Suite",
+  "short_name": "Mi Menu",
+  "description": "Pedidos, produccion y entregas para restaurantes.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#fffaf5",
-  "theme_color": "#ff5a1f",
+  "background_color": "#fff7f0",
+  "theme_color": "#f65a1c",
   "icons": [
     {
       "src": "icon-192.png",
@@ -33,6 +33,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
