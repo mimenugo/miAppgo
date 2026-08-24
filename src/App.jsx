@@ -92,7 +92,7 @@ const updatePreparationArea = (store, order, area, next) => {
 
 function notifyOrderByWhatsApp(order, brandName = "Mi Menu Suite") {
   const products = order.lines.map((line) => `• ${line.qty} x ${line.name}${line.size ? ` (${line.size})` : ""}${line.note ? `\n  _Indicaciones: ${line.note}_` : ""} — ${money(line.price * line.qty)}`).join("\n");
-  const message = [`🔥 *NUEVO PEDIDO ${brandName.toUpperCase()}*`, `*Folio:* #${order.id}`, `*Cliente:* ${order.customer}`, order.phone && order.phone !== "Mostrador" ? `*TelÃ©fono:* ${order.phone}` : "", order.serviceType === "Domicilio" && order.address ? `*DirecciÃ³n:* ${order.address}` : "", order.reference ? `*Referencia:* ${order.reference}` : "", "", "*Productos:*", products, "", `*Total:* ${money(order.total)}`, `*Pago:* ${order.payment}${order.payment === "Efectivo" && order.changeFor ? ` (paga con ${money(Number(order.changeFor))})` : ""}`].filter(Boolean).join("\n");
+  const message = [`🔥 *NUEVO PEDIDO ${brandName.toUpperCase()}*`, `*Folio:* #${order.id}`, `*Cliente:* ${order.customer}`, order.phone && order.phone !== "Mostrador" ? `*Teléfono:* ${order.phone}` : "", order.serviceType === "Domicilio" && order.address ? `*Dirección:* ${order.address}` : "", order.reference ? `*Referencia:* ${order.reference}` : "", "", "*Productos:*", products, "", `*Total:* ${money(order.total)}`, `*Pago:* ${order.payment}${order.payment === "Efectivo" && order.changeFor ? ` (paga con ${money(Number(order.changeFor))})` : ""}`].filter(Boolean).join("\n");
   window.open(`https://wa.me/${WHATSAPP_TEST_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
 }
 
@@ -115,17 +115,17 @@ const roles = {
   repartidor: {
     label: "Repartidor Rutas",
     icon: Bike,
-    subtitle: "Entregas y navegaciÃ³n",
+    subtitle: "Entregas y navegación",
   },
   produccion: {
     label: "Cocina / Comandas",
     icon: ChefHat,
-    subtitle: "ProducciÃ³n de pedidos",
+    subtitle: "Produccion de pedidos",
   },
   cliente: {
     label: "Cliente",
     icon: ShoppingBag,
-    subtitle: "Tienda pÃºblica para ordenar",
+    subtitle: "Tienda pública para ordenar",
   },
   marketing: {
     label: "Marketing / Diagnostico",
@@ -147,7 +147,7 @@ function RolePicker({ role, openSessions }) {
           <CurrentIcon size={18} />
         </span>
         <span>
-          <small>SesiÃ³n actual</small>
+          <small>Sesión actual</small>
           <strong>{roles[role].label}</strong>
         </span>
         <ChevronRight size={17} />
@@ -325,7 +325,7 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSi
             <p>Ingredientes frescos, cocina honesta y entregas que puedes seguir en tiempo real.</p>
             <div className="hero-actions">
               <a className="primary" href="#menu">
-                Ver el menÃº <ArrowRight size={18} />
+                Ver el menu <ArrowRight size={18} />
               </a>
               <span>
                 <Clock3 size={18} />
@@ -341,7 +341,7 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSi
             <div className="float-card top">
               <span>🛵</span>
               <p>
-                <b>Entrega rÃ¡pida</b>
+                <b>Entrega rápida</b>
                 <small>Seguimiento en vivo</small>
               </p>
             </div>
@@ -357,7 +357,7 @@ function CustomerView({ products, cart, addItem, changeQty, updateNote, updateSi
         <section className="menu-section" id="menu">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">Nuestro menÃº</span>
+              <span className="eyebrow">Nuestro menu</span>
               <h2>Favoritos de la casa</h2>
             </div>
             <label className="search">
@@ -440,7 +440,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
         paid: false,
       });
       notifyOrderByWhatsApp(order, business.brandName);
-      if (payment === "Stripe en lÃ­nea") {
+      if (payment === "Stripe en línea") {
         const session = await createStripeCheckout(order.dbId);
         window.location.assign(session.url);
         return;
@@ -469,7 +469,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
               {cart.length === 0 ? (
                 <div className="empty">
                   <ShoppingBag />
-                  <h3>Tu bolsa estÃ¡ vacÃ­a</h3>
+                  <h3>Tu bolsa está vacía</h3>
                 </div>
               ) : (
                 cart.map((row) => (
@@ -490,7 +490,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
                     </div>
                     {row.category === "Pizzas" && (
                       <label className="item-size">
-                        TamaÃ±o
+                        Tamaño
                         <select value={row.size || "Mediana"} onChange={(e) => updateSize(row.id, e.target.value)}>
                           {Object.keys(pizzaSizeAdjustments).map((size) => (
                             <option key={size}>{size}</option>
@@ -532,30 +532,30 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
             <div className="form-grid">
               <label>
                 Nombre completo
-                <input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="¿QuiÃ©n recibe?" />
+                <input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="¿Quién recibe?" />
               </label>
               {serviceType === "Domicilio" && (
                 <label>
-                  TelÃ©fono
+                  Teléfono
                   <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="33 1234 5678" />
                 </label>
               )}
               {serviceType === "Domicilio" && (
                 <label className="full">
-                  DirecciÃ³n
-                  <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle, nÃºmero, colonia" />
+                  Dirección
+                  <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle, número, colonia" />
                 </label>
               )}
               {serviceType === "Domicilio" && (
                 <label className="full">
                   Referencia
-                  <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="PortÃ³n, entre calles, indicaciones" />
+                  <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="Portón, entre calles, indicaciones" />
                 </label>
               )}
             </div>
             <div className="step-title">
               <span>2</span>
-              <h3>MÃ©todo de pago</h3>
+              <h3>método  de pago</h3>
             </div>
             <div className="payment-options">
               <button className={payment === "Efectivo" ? "active" : ""} onClick={() => setPayment("Efectivo")}>
@@ -567,23 +567,23 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
                 {payment === "Efectivo" && <Check />}
               </button>
               {posSettings.stripe?.enabled && (
-                <button className={payment === "Stripe en lÃ­nea" ? "active" : ""} onClick={() => setPayment("Stripe en lÃ­nea")}>
+                <button className={payment === "Stripe en línea" ? "active" : ""} onClick={() => setPayment("Stripe en línea")}>
                   <CreditCard />
                   <span>
-                    <b>Tarjeta en lÃ­nea</b>
+                    <b>Tarjeta en línea</b>
                     <small>Stripe Checkout</small>
                   </span>
-                  {payment === "Stripe en lÃ­nea" && <Check />}
+                  {payment === "Stripe en línea" && <Check />}
                 </button>
               )}
             </div>
             {payment === "Efectivo" && (
               <label className="change-field">
-                ¿Con cuÃ¡nto pagarÃ¡s?
-                <input type="number" value={form.changeFor} onChange={(e) => setForm({ ...form, changeFor: e.target.value })} placeholder={`MÃ­nimo ${total}`} />
+                ¿Con cuánto pagarás?
+                <input type="number" value={form.changeFor} onChange={(e) => setForm({ ...form, changeFor: e.target.value })} placeholder={`Mínimo ${total}`} />
               </label>
             )}
-            {payment === "Stripe en lÃ­nea" && (
+            {payment === "Stripe en línea" && (
               <div className="card-note">
                 <ShieldCheck /> El pago se realiza en Stripe Checkout y solo se marca pagado cuando el webhook confirma el cobro.
               </div>
@@ -593,7 +593,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
                 Confirmar y enviar por WhatsApp <ArrowRight size={18} />
               </button>
               <small className="whatsapp-note">
-                <MessageCircle size={14} /> TambiÃ©n se registra en cocina y administraciÃ³n
+                <MessageCircle size={14} /> También se registra en cocina y administración
               </small>
             </OrderTotal>
           </div>
@@ -612,7 +612,7 @@ function Checkout({ cart, changeQty, updateNote, updateSize, close, createOrder,
               <i className="active" />
               <i />
               <small>Confirmado</small>
-              <small>ProducciÃ³n</small>
+              <small>Producción</small>
               <small>En camino</small>
             </div>
             <button className="primary wide" onClick={close}>
@@ -633,7 +633,7 @@ function OrderTotal({ subtotal, delivery, total, children }) {
         <b>{money(subtotal)}</b>
       </p>
       <p>
-        <span>EnvÃ­o</span>
+        <span>Envío</span>
         <b>{money(delivery)}</b>
       </p>
       <p className="total">
@@ -649,16 +649,16 @@ const modules = [
   ["Resumen", LayoutDashboard],
   ["Pedidos", ShoppingBag],
   ["Caja", ReceiptText],
-  ["ProducciÃ³n", CookingPot],
+  ["Producción", CookingPot],
   ["Barra", PackageCheck],
   ["Reparto", Bike],
   ["Productos", Store],
   ["Clientes", Users],
   ["Reportes", BarChart3],
-  ["DiagnÃ³stico", ClipboardList],
-  ["ConfiguraciÃ³n", ShieldCheck],
+  ["Diagnóstico", ClipboardList],
+  ["Configuración", ShieldCheck],
 ];
-function DashboardShell({ active, setActive, children, onNewSale, title = "Centro de operaciÃ³n", subtitle = "Todo tu restaurante en un solo lugar.", moduleItems = modules }) {
+function DashboardShell({ active, setActive, children, onNewSale, title = "Centro de operación", subtitle = "Todo tu restaurante en un solo lugar.", moduleItems = modules }) {
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -693,18 +693,18 @@ function AdminView({ store, initialActive = "Resumen" }) {
   const [active, setActive] = useState(initialActive);
   const [saleOpen, setSaleOpen] = useState(false);
   return (
-    <DashboardShell active={active} setActive={setActive} onNewSale={() => setSaleOpen(true)} title={active} subtitle="InformaciÃ³n sincronizada con cocina y reparto.">
+    <DashboardShell active={active} setActive={setActive} onNewSale={() => setSaleOpen(true)} title={active} subtitle="Información sincronizada con cocina y reparto.">
       {active === "Resumen" && <Summary store={store} />}
       {active === "Pedidos" && <OrdersModule store={store} />}
       {active === "Caja" && <CashControl store={store} />}
-      {active === "ProducciÃ³n" && <ProductionBoard store={store} />}
+      {active === "Producción" && <ProductionBoard store={store} />}
       {active === "Barra" && <BarBoard store={store} />}
       {active === "Reparto" && <DispatchModule store={store} />}
       {active === "Productos" && <ProductsModule store={store} />}
       {active === "Clientes" && <CustomersModule customers={store.customers} />}
       {active === "Reportes" && <ReportsModule store={store} />}
-      {active === "DiagnÃ³stico" && <BusinessDiscoveryModule store={store} />}
-      {active === "ConfiguraciÃ³n" && <ConfigurationCenter store={store} />}
+      {active === "Diagnóstico" && <BusinessDiscoveryModule store={store} />}
+      {active === "Configuración" && <ConfigurationCenter store={store} />}
       {saleOpen && <PointOfSale store={store} close={() => setSaleOpen(false)} />}
     </DashboardShell>
   );
@@ -752,7 +752,7 @@ function Summary({ store }) {
       <section className="dash-card orders-card module-space">
         <div className="card-title">
           <div>
-            <small>OperaciÃ³n en vivo</small>
+            <small>Operación en vivo</small>
             <h2>Pedidos recientes</h2>
           </div>
         </div>
@@ -784,7 +784,7 @@ function OrderRow({ order }) {
 }
 
 function OrdersModule({ store }) {
-  const statuses = ["Recibido", "Pendiente de pago", "Confirmado", "En preparaciÃ³n", "Listo para recoger", "Listo para enviar", "Asignado a repartidor", "En ruta", "Entregado", "Cancelado"];
+  const statuses = ["Recibido", "Pendiente de pago", "Confirmado", "En preparación", "Listo para recoger", "Listo para enviar", "Asignado a repartidor", "En ruta", "Entregado", "Cancelado"];
   return (
     <section className="dash-card data-card">
       <div className="card-title">
@@ -825,7 +825,7 @@ function ProductionBoard({ store }) {
   const visible = store.orders.filter((order) => !["Entregado", "Cancelado", "Pendiente de pago"].includes(order.status) && kitchenLines(order).length);
   const columns = [
     ["Pendiente", "Recibido", "stage-new"],
-    ["Preparando", "En preparaciÃ³n", "stage-cooking"],
+    ["Preparando", "En preparación", "stage-cooking"],
     ["Listo", "Listo", "stage-ready"],
   ];
   return (
@@ -943,7 +943,7 @@ function BarBoard({ store }) {
 }
 
 function DispatchModule({ store }) {
-  const orders = store.orders.filter((o) => isDeliveryOrder(o) && ["Recibido", "Confirmado", "En preparaciÃ³n", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
+  const orders = store.orders.filter((o) => isDeliveryOrder(o) && ["Recibido", "Confirmado", "En preparación", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
   const readyStatus = (status) => status === "Listo para enviar";
   const assignDriver = (order, driver) =>
     store.updateOrder(order.id, {
@@ -954,8 +954,8 @@ function DispatchModule({ store }) {
     <section className="dash-card data-card">
       <div className="card-title">
         <div>
-          <small>Ãšltima milla</small>
-          <h2>AsignaciÃ³n de reparto</h2>
+          <small>Última milla</small>
+          <h2>Asignación de reparto</h2>
         </div>
       </div>
       {orders.length === 0 ? (
@@ -981,7 +981,7 @@ function DispatchModule({ store }) {
               <div>
                 <select value={order.driver} onChange={(e) => assignDriver(order, e.target.value)}>
                   <option value="">Sin asignar</option>
-                  <option>Roberto GÃ³mez</option>
+                  <option>Roberto Gómez</option>
                   <option>Luis Fernando Ruiz</option>
                 </select>
                 <span className={`status ${order.status.toLowerCase().replace(" ", "-")}`}>{order.status}</span>
@@ -1040,7 +1040,7 @@ function CashControl({ store }) {
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 1800);
   };
-  const tabs = ["Estado de caja", "Entradas / retiros", "Cierre de turno (X)", "Cierre del dÃ­a (Z)", "Historial de cortes"];
+  const tabs = ["Estado de caja", "Entradas / retiros", "Cierre de turno (X)", "Cierre del día (Z)", "Historial de cortes"];
   return (
     <div className="cash-module">
       <div className="cash-tabs">
@@ -1059,12 +1059,12 @@ function CashControl({ store }) {
                 new Intl.DateTimeFormat("en-CA", {
                   timeZone: store.business.timezone,
                 }).format(new Date()),
-            ) && <div className="api-warning">Hay pedidos del dÃ­a y la caja no estÃ¡ abierta. Realiza la apertura del turno.</div>}
+            ) && <div className="api-warning">Hay pedidos del día y la caja no está abierta. Realiza la apertura del turno.</div>}
           <section className={`cash-status ${cash.open ? "open" : "closed"}`}>
             <div>
               <span className="live-dot" />
               <small>{cash.open ? "CAJA ABIERTA" : "CAJA CERRADA"}</small>
-              <h2>{cash.open ? `Turno ${cash.shiftName || ""} en operaciÃ³n` : "Inicia un nuevo turno"}</h2>
+              <h2>{cash.open ? `Turno ${cash.shiftName || ""} en operación` : "Inicia un nuevo turno"}</h2>
               <p>{cash.open ? `Apertura: ${new Date(cash.openedAt).toLocaleString("es-MX")}` : "Registra el turno y fondo inicial para comenzar."}</p>
             </div>
             {cash.open ? (
@@ -1170,7 +1170,7 @@ function CashControl({ store }) {
           <section className="dash-card">
             <div className="card-title">
               <div>
-                <small>BitÃ¡cora</small>
+                <small>Bitácora</small>
                 <h2>Movimientos del turno</h2>
               </div>
             </div>
@@ -1195,7 +1195,7 @@ function CashControl({ store }) {
           </section>
         </div>
       )}
-      {["Cierre de turno (X)", "Cierre del dÃ­a (Z)"].includes(tab) && (
+      {["Cierre de turno (X)", "Cierre del día (Z)"].includes(tab) && (
         <section className="dash-card close-register">
           <div className="card-title">
             <div>
@@ -1214,7 +1214,7 @@ function CashControl({ store }) {
                 </div>
                 <label>
                   Efectivo contado
-                  <input type="number" min="0" value={counted} onChange={(e) => setCounted(e.target.value)} placeholder="Captura el total fÃ­sico" />
+                  <input type="number" min="0" value={counted} onChange={(e) => setCounted(e.target.value)} placeholder="Captura el total físico" />
                 </label>
                 <label className="full">
                   Observaciones
@@ -1252,7 +1252,7 @@ function CashControl({ store }) {
           </div>
           <div className="cuts-list">
             {cash.cuts.length === 0 ? (
-              <Empty text="TodavÃ­a no hay cierres de caja" />
+              <Empty text="Todavía no hay cierres de caja" />
             ) : (
               cash.cuts.map((cut) => (
                 <article key={cut.id}>
@@ -1284,12 +1284,12 @@ function CashControl({ store }) {
           </div>
         </section>
       )}
-      {tab === "ConfiguraciÃ³n POS" && (
+      {tab === "Configuración POS" && (
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
-              <small>Hardware y operaciÃ³n</small>
-              <h2>Impresoras, cajÃ³n y pagos</h2>
+              <small>Hardware y operación</small>
+              <h2>Impresoras, cajón y pagos</h2>
             </div>
             {settingsSaved && (
               <span className="settings-saved">
@@ -1299,7 +1299,7 @@ function CashControl({ store }) {
           </div>
           <div className="settings-grid">
             <fieldset>
-              <legend>ImpresiÃ³n por Ã¡rea</legend>
+              <legend>Impresión por Área</legend>
               <label>
                 Impresora de caja
                 <input
@@ -1364,7 +1364,7 @@ function CashControl({ store }) {
               </label>
             </fieldset>
             <fieldset>
-              <legend>CajÃ³n de dinero</legend>
+              <legend>Cajón de dinero</legend>
               <label className="inline-check">
                 <input
                   type="checkbox"
@@ -1389,14 +1389,14 @@ function CashControl({ store }) {
                     })
                   }
                 />{" "}
-                Impresora/cajÃ³n compatibles y con puente POS configurado
+                Impresora/cajón compatibles y con puente POS configurado
               </label>
               <p className="settings-note">
-                La aplicaciÃ³n emite el evento <code>gastropos:open-cash-drawer</code>. La apertura fÃ­sica y el envÃ­o silencioso a una impresora especÃ­fica requieren un conector local compatible con ESC/POS.
+                La aplicación emite el evento <code>gastropos:open-cash-drawer</code>. La apertura física y el envío silencioso a una impresora específica requieren un conector local compatible con ESC/POS.
               </p>
             </fieldset>
             <fieldset>
-              <legend>Transferencia / DepÃ³sito</legend>
+              <legend>Transferencia / Depósito</legend>
               <label>
                 Titular
                 <input
@@ -1414,7 +1414,7 @@ function CashControl({ store }) {
                 <input value={posSettings.bank} onChange={(e) => setPosSettings({ ...posSettings, bank: e.target.value })} />
               </label>
               <label>
-                NÃºmero de cuenta
+                Número de cuenta
                 <input
                   value={posSettings.accountNumber}
                   onChange={(e) =>
@@ -1430,7 +1430,7 @@ function CashControl({ store }) {
                 <input value={posSettings.clabe} onChange={(e) => setPosSettings({ ...posSettings, clabe: e.target.value })} />
               </label>
               <label>
-                NÃºmero de tarjeta
+                Número de tarjeta
                 <input
                   value={posSettings.cardNumber}
                   onChange={(e) =>
@@ -1442,7 +1442,7 @@ function CashControl({ store }) {
                 />
               </label>
               <label>
-                URL del cÃ³digo QR
+                URL del código QR
                 <input
                   value={posSettings.paymentQr}
                   onChange={(e) =>
@@ -1500,7 +1500,7 @@ function CashControl({ store }) {
                   />
                 </label>
                 <label>
-                  PreparaciÃ³n (min)
+                  preparación (min)
                   <input
                     type="number"
                     min="0"
@@ -1531,7 +1531,7 @@ function CashControl({ store }) {
             </fieldset>
           </div>
           <button className="primary" onClick={saveSettings}>
-            Guardar configuraciÃ³n
+            Guardar configuración
           </button>
         </section>
       )}
@@ -1619,7 +1619,7 @@ function ProductsModule({ store }) {
               <input type="number" value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })} />
             </label>
             <label>
-              CategorÃ­a
+              Categoría
               <select value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
                 {categories.map((category) => (
                   <option key={category} value={category}>
@@ -1629,7 +1629,7 @@ function ProductsModule({ store }) {
               </select>
             </label>
             <label>
-              Ãrea de preparaciÃ³n
+              Área de preparación
               <select value={editing.station || "Cocina"} onChange={(e) => setEditing({ ...editing, station: e.target.value })}>
                 <option value="Cocina">Cocina</option>
                 <option value="Barra">Barra / Listo para servir</option>
@@ -1640,7 +1640,7 @@ function ProductsModule({ store }) {
               <input type="checkbox" checked={editing.deliveryEnabled !== false} onChange={(e) => setEditing({ ...editing, deliveryEnabled: e.target.checked })} />
               <span>
                 <b>Disponible para reparto</b>
-                <small>Si se desactiva, solo podrÃ¡ venderse desde Caja.</small>
+                <small>Si se desactiva, solo podrá venderse desde Caja.</small>
               </span>
             </label>
             <label>
@@ -1650,7 +1650,7 @@ function ProductsModule({ store }) {
             <label className="full image-field">
               Imagen del producto
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => loadImage(e.target.files?.[0])} />
-              <small>PNG, JPG o WebP · mÃ¡ximo 1.5 MB</small>
+              <small>PNG, JPG o WebP · máximo 1.5 MB</small>
               {editing.image && (
                 <div className="image-preview">
                   <img src={editing.image} alt="Vista previa" />
@@ -1661,7 +1661,7 @@ function ProductsModule({ store }) {
               )}
             </label>
             <label className="full">
-              DescripciÃ³n
+              Descripción
               <input value={editing.desc} onChange={(e) => setEditing({ ...editing, desc: e.target.value })} />
             </label>
           </div>
@@ -1926,7 +1926,7 @@ function BusinessSettings({ store }) {
       setSaving(true);
       setMessage("");
       await store.saveBusiness(form);
-      setMessage("ConfiguraciÃ³n guardada en la base de datos.");
+      setMessage("Configuración guardada en la base de datos.");
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -1943,7 +1943,7 @@ function BusinessSettings({ store }) {
           </div>
           <span className="status pagado">MySQL</span>
         </div>
-        <p className="settings-intro">Estos datos actualizan automÃ¡ticamente encabezados, menÃº digital, panel administrativo, mensajes y tickets.</p>
+        <p className="settings-intro">Estos datos actualizan automaticamente encabezados, menu digital, panel administrativo, mensajes y tickets.</p>
         <div className="business-form">
           <label>
             Nombre de la marca
@@ -1958,15 +1958,15 @@ function BusinessSettings({ store }) {
             <input value={form.branchName || ""} onChange={(event) => setForm({ ...form, branchName: event.target.value })} />
           </label>
           <label>
-            TelÃ©fono
+            Teléfono
             <input value={form.phone || ""} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
           </label>
           <label className="full">
-            DirecciÃ³n
+            Dirección
             <input value={form.address || ""} onChange={(event) => setForm({ ...form, address: event.target.value })} />
           </label>
           <label className="full">
-            Correo electrÃ³nico
+            Correo electronico
             <input type="email" value={form.email || ""} onChange={(event) => setForm({ ...form, email: event.target.value })} />
           </label>
           <label className="full business-logo-field">
@@ -1977,7 +1977,7 @@ function BusinessSettings({ store }) {
         </div>
         {message && <p className="settings-message">{message}</p>}
         <button className="primary" disabled={saving || !form.brandName || !form.restaurantName || !form.branchName} onClick={save}>
-          {saving ? "Guardando..." : "Guardar configuraciÃ³n"}
+          {saving ? "Guardando..." : "Guardar configuración"}
         </button>
       </section>
     </div>
@@ -1985,7 +1985,7 @@ function BusinessSettings({ store }) {
 }
 
 function ConfigurationCenter({ store }) {
-  const tabs = ["Negocio", "ConfiguraciÃ³n POS", "Turnos", "Zona horaria", "Pagos en lÃ­nea", "QR y transferencias", "Tarjeta en caja"];
+  const tabs = ["Negocio", "Configuración POS", "Turnos", "Zona horaria", "Pagos en línea", "QR y transferencias", "Tarjeta en caja"];
   const [tab, setTab] = useState("Negocio"),
     [settings, setSettings] = useState(store.posSettings),
     [saved, setSaved] = useState("");
@@ -2003,7 +2003,7 @@ function ConfigurationCenter({ store }) {
       const stored = await store.savePosSettings(settings);
       settingsDirty.current = false;
       setSettings(stored);
-      setSaved("ConfiguraciÃ³n guardada.");
+      setSaved("Configuración guardada.");
     } catch (error) {
       setSaved(error.message);
     }
@@ -2029,17 +2029,17 @@ function ConfigurationCenter({ store }) {
         ))}
       </div>
       {tab === "Negocio" && <BusinessSettings store={store} />}
-      {tab === "ConfiguraciÃ³n POS" && (
+      {tab === "Configuración POS" && (
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
               <small>Hardware y moneda</small>
-              <h2>ConfiguraciÃ³n POS</h2>
+              <h2>Configuración POS</h2>
             </div>
           </div>
           <div className="settings-grid">
             <fieldset>
-              <legend>Impresoras por Ã¡rea</legend>
+              <legend>Impresoras por Área</legend>
               <label>
                 Caja
                 <input value={settings.cashPrinter || ""} onChange={(e) => set("cashPrinter", e.target.value)} />
@@ -2054,9 +2054,9 @@ function ConfigurationCenter({ store }) {
               </label>
             </fieldset>
             <fieldset>
-              <legend>CajÃ³n</legend>
+              <legend>Cajón</legend>
               <label className="inline-check">
-                <input type="checkbox" checked={settings.cashDrawerEnabled !== false} onChange={(e) => set("cashDrawerEnabled", e.target.checked)} /> Abrir Ãºnicamente al confirmar efectivo
+                <input type="checkbox" checked={settings.cashDrawerEnabled !== false} onChange={(e) => set("cashDrawerEnabled", e.target.checked)} /> Abrir Únicamente al confirmar efectivo
               </label>
               <label className="inline-check">
                 <input type="checkbox" checked={Boolean(settings.cashDrawerCompatible)} onChange={(e) => set("cashDrawerCompatible", e.target.checked)} /> Puente ESC/POS compatible configurado
@@ -2065,7 +2065,7 @@ function ConfigurationCenter({ store }) {
             <fieldset>
               <legend>Tipo de cambio</legend>
               <label>
-                Pesos por dÃ³lar
+                Pesos por dólar
                 <input type="number" min="0.01" step="0.01" value={settings.usdExchangeRate || ""} onChange={(e) => set("usdExchangeRate", Number(e.target.value))} />
               </label>
               <label className="inline-check">
@@ -2074,7 +2074,7 @@ function ConfigurationCenter({ store }) {
             </fieldset>
           </div>
           <button className="primary" onClick={save}>
-            Guardar configuraciÃ³n POS
+            Guardar configuración POS
           </button>
         </section>
       )}
@@ -2173,21 +2173,21 @@ function ConfigurationCenter({ store }) {
               </b>
             </div>
           </div>
-          {!zoneMatches && <div className="api-warning">La zona del dispositivo no coincide con Tijuana/Los Ãngeles. Verifica la configuraciÃ³n de fecha y hora del sistema.</div>}
+          {!zoneMatches && <div className="api-warning">La zona del dispositivo no coincide con Tijuana/Los Ángeles. Verifica la configuración de fecha y hora del sistema.</div>}
         </section>
       )}
-      {tab === "Pagos en lÃ­nea" && (
+      {tab === "Pagos en línea" && (
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
-              <small>Solo menÃº web / PWA</small>
+              <small>Solo menu web / PWA</small>
               <h2>Stripe Checkout</h2>
             </div>
             <span className="status pagado">API segura</span>
           </div>
           <div className="settings-grid">
             <fieldset>
-              <legend>OperaciÃ³n</legend>
+              <legend>Operación</legend>
               <label className="inline-check">
                 <input
                   type="checkbox"
@@ -2199,7 +2199,7 @@ function ConfigurationCenter({ store }) {
                     })
                   }
                 />{" "}
-                Habilitar Stripe para clientes en lÃ­nea
+                Habilitar Stripe para clientes en lí­nea
               </label>
               <label>
                 Ambiente
@@ -2213,11 +2213,11 @@ function ConfigurationCenter({ store }) {
                   }
                 >
                   <option value="test">Sandbox / pruebas</option>
-                  <option value="production">ProducciÃ³n</option>
+                  <option value="production">Producción</option>
                 </select>
               </label>
               <label>
-                Llave pÃºblica de pruebas
+                Llave pública de pruebas
                 <input
                   value={settings.stripe?.publishableTest || ""}
                   onChange={(e) =>
@@ -2230,7 +2230,7 @@ function ConfigurationCenter({ store }) {
                 />
               </label>
               <label>
-                Llave pÃºblica de producciÃ³n
+                Llave pública de Producción
                 <input
                   value={settings.stripe?.publishableLive || ""}
                   onChange={(e) =>
@@ -2245,7 +2245,7 @@ function ConfigurationCenter({ store }) {
             </fieldset>
             <fieldset>
               <legend>Variables privadas del servidor</legend>
-              <p className="settings-note">Configura STRIPE_TEST_RESTRICTED_KEY y STRIPE_TEST_WEBHOOK_SECRET. Para producciÃ³n usa STRIPE_LIVE_RESTRICTED_KEY y STRIPE_LIVE_WEBHOOK_SECRET. Las llaves privadas no se guardan ni se muestran en esta pantalla.</p>
+              <p className="settings-note">Configura STRIPE_TEST_RESTRICTED_KEY y STRIPE_TEST_WEBHOOK_SECRET. Para Producción usa STRIPE_LIVE_RESTRICTED_KEY y STRIPE_LIVE_WEBHOOK_SECRET. Las llaves privadas no se guardan ni se muestran en esta pantalla.</p>
               <p className="settings-note">
                 Webhook: <code>/api/webhooks/stripe</code>
               </p>
@@ -2308,9 +2308,9 @@ function ConfigurationCenter({ store }) {
               </label>
             </fieldset>
           </div>
-          <p className="settings-note">Estos mÃ©todos quedan Pendientes de validar hasta que caja confirme el abono. CoDi/DiMo pueden operar mostrando QR/datos; una integraciÃ³n bancaria automÃ¡tica requerirÃ¡ las credenciales que entregue el banco.</p>
+          <p className="settings-note">Estos métodos  quedan Pendientes de validar hasta que caja confirme el abono. CoDi/DiMo pueden operar mostrando QR/datos; una integración bancaria automática requerirá¡ las credenciales que entregue el banco.</p>
           <button className="primary" onClick={save}>
-            Guardar mÃ©todos
+            Guardar método 
           </button>
         </section>
       )}
@@ -2318,7 +2318,7 @@ function ConfigurationCenter({ store }) {
         <section className="dash-card pos-settings">
           <div className="card-title">
             <div>
-              <small>Terminal fÃ­sica</small>
+              <small>Terminal física</small>
               <h2>Pago con tarjeta en caja</h2>
             </div>
           </div>
@@ -2368,7 +2368,7 @@ function ConfigurationCenter({ store }) {
               </label>
             </fieldset>
           </div>
-          <p className="settings-note">Con terminal externa, el cajero debe confirmar la autorizaciÃ³n antes de registrar el pago. Una terminal integrada requerirÃ¡ credenciales y SDK del proveedor.</p>
+          <p className="settings-note">Con terminal externa, el cajero debe confirmar la autorización antes de registrar el pago. Una terminal integrada requerirá¡ credenciales y SDK del proveedor.</p>
           <button className="primary" onClick={save}>
             Guardar tarjeta en caja
           </button>
@@ -2406,8 +2406,8 @@ function CustomersModule({ customers }) {
               <small>{customer.phone}</small>
             </div>
             <div>
-              <small>{customer.address ? "DirecciÃ³n" : "Tipo de venta"}</small>
-              <p>{customer.address || "Para llevar · sin direcciÃ³n"}</p>
+              <small>{customer.address ? "Dirección" : "Tipo de venta"}</small>
+              <p>{customer.address || "Para llevar · sin dirección"}</p>
             </div>
             <div>
               <b>{customer.orders}</b>
@@ -2471,7 +2471,7 @@ function ReportsModule({ store }) {
     return start < end ? hour >= start && hour < end : hour >= start || hour < end;
   });
   const cash = filtered.filter((o) => o.payment === "Efectivo").reduce((s, o) => s + o.total, 0);
-  const card = filtered.filter((o) => ["Tarjeta", "Transferencia / DepÃ³sito"].includes(o.payment)).reduce((s, o) => s + o.total, 0);
+  const card = filtered.filter((o) => ["Tarjeta", "Transferencia / Depósito"].includes(o.payment)).reduce((s, o) => s + o.total, 0);
   const total = cash + card;
   const ticket = filtered.length ? total / filtered.length : 0;
   const rangeLabel = period === "turno" ? `${referenceDate} · ${shift}` : rangeStart === rangeEnd ? rangeStart : `${rangeStart} al ${rangeEnd}`;
@@ -2552,7 +2552,7 @@ function ReportsModule({ store }) {
       </div>
       <div className="report-grid">
         <article className="dash-card">
-          <small>Ventas por mÃ©todo</small>
+          <small>Ventas por método</small>
           <h2>{money(total)}</h2>
           <div className="payment-bar">
             <span style={{ width: `${total ? (cash / total) * 100 : 0}%` }} />
@@ -2565,7 +2565,7 @@ function ReportsModule({ store }) {
           </p>
         </article>
         <article className="dash-card">
-          <small>DesempeÃ±o operativo</small>
+          <small>Desempeño operativo</small>
           <h2>{filtered.length} pedidos</h2>
           <div className="metric-line">
             <span>Pagados</span>
@@ -2700,7 +2700,7 @@ function PointOfSale({ store, close }) {
   }, [timing, scheduleSlots, scheduledTime]);
   const scheduleReady = timing === "Ahora" || (scheduledDate && scheduledTime);
   const cashChange = Math.max(0, Number(cashTendered || 0) - total);
-  const paymentReady = payment === "Efectivo" ? cashConfirmed && Number(cashTendered) >= total : ["Transferencia / DepÃ³sito", "Pago con QR", "CoDi", "DiMo", "Tarjeta en caja"].includes(payment) && transferValidated;
+  const paymentReady = payment === "Efectivo" ? cashConfirmed && Number(cashTendered) >= total : ["Transferencia / Depósito", "Pago con QR", "CoDi", "DiMo", "Tarjeta en caja"].includes(payment) && transferValidated;
   const complete = async () => {
     if (submitting || !paymentReady) return;
     setSubmitting(true);
@@ -2842,7 +2842,7 @@ function PointOfSale({ store, close }) {
                   </div>
                   {line.category === "Pizzas" && (
                     <label className="pos-size">
-                      TamaÃ±o
+                      Tamaño
                       <select value={line.size} onChange={(e) => updateLineSize(line.id, e.target.value)}>
                         {Object.keys(pizzaSizeAdjustments).map((size) => (
                           <option key={size}>{size}</option>
@@ -2868,7 +2868,7 @@ function PointOfSale({ store, close }) {
         <div className="pos-form-step">
           <span className="eyebrow">Paso 2</span>
           <h2>Tipo de entrega y datos del cliente</h2>
-          <p>Primero selecciona cÃ³mo se entregarÃ¡ el pedido.</p>
+          <p>Primero selecciona cómo se entregará el pedido.</p>
           <div className="service-options">
             <button className={serviceType === "Recoger en restaurante" ? "active" : ""} onClick={() => changeServiceType("Recoger en restaurante")}>
               <ShoppingBag /> 🏪 Recoger en restaurante
@@ -2895,7 +2895,7 @@ function PointOfSale({ store, close }) {
               {serviceType === "Domicilio" && (
                 <>
                   <label>
-                    TelÃ©fono
+                    Teléfono
                     <input
                       value={customerData.phone}
                       onChange={(e) =>
@@ -2907,7 +2907,7 @@ function PointOfSale({ store, close }) {
                     />
                   </label>
                   <label>
-                    Costo de envÃ­o
+                    Costo de envío
                     <input
                       type="number"
                       min="0"
@@ -2921,7 +2921,7 @@ function PointOfSale({ store, close }) {
                     />
                   </label>
                   <label className="full">
-                    DirecciÃ³n completa
+                    Dirección completa
                     <input
                       value={customerData.address}
                       onChange={(e) =>
@@ -2930,11 +2930,11 @@ function PointOfSale({ store, close }) {
                           address: e.target.value,
                         })
                       }
-                      placeholder="Calle, nÃºmero, colonia, ciudad"
+                      placeholder="Calle, número, colonia, ciudad"
                     />
                   </label>
                   <label className="full">
-                    Referencias de ubicaciÃ³n
+                    Referencias de ubicación
                     <input
                       value={customerData.reference}
                       onChange={(e) =>
@@ -2943,7 +2943,7 @@ function PointOfSale({ store, close }) {
                           reference: e.target.value,
                         })
                       }
-                      placeholder="Entre calles, color del portÃ³n, indicaciones"
+                      placeholder="Entre calles, color del portón, indicaciones"
                     />
                   </label>
                 </>
@@ -2951,7 +2951,7 @@ function PointOfSale({ store, close }) {
             </div>
           )}
           <div className="schedule-card">
-            <h3>¿Para cuÃ¡ndo?</h3>
+            <h3>¿Para cuándo?</h3>
             <div className="service-options">
               <button className={timing === "Ahora" ? "active" : ""} onClick={() => setTiming("Ahora")}>
                 <Clock3 /> Ahora
@@ -2993,7 +2993,7 @@ function PointOfSale({ store, close }) {
           <section className="kitchen-print">
             <div className="ticket-logo">🔥 {store.business.brandName}</div>
             <h2>RESUMEN DE LA ORDEN</h2>
-            <p className="ticket-meta">TodavÃ­a no se ha impreso ni enviado ninguna comanda</p>
+            <p className="ticket-meta">Todavía no se ha impreso ni enviado ninguna comanda</p>
             <div className="ticket-customer">
               <small>CLIENTE</small>
               <b>{customerData.customer}</b>
@@ -3016,7 +3016,7 @@ function PointOfSale({ store, close }) {
               ))}
             </div>
             <footer>
-              <span>EnvÃ­o: {money(delivery)}</span>
+              <span>Envío: {money(delivery)}</span>
               <b>Total: {money(total)}</b>
             </footer>
           </section>
@@ -3034,7 +3034,7 @@ function PointOfSale({ store, close }) {
                 <Check /> Cliente: {customerData.customer}
               </li>
               <li>
-                <Printer /> La impresiÃ³n ocurrirÃ¡ despuÃ©s del cobro
+                <Printer /> La impresión ocurrirá después del cobro
               </li>
             </ol>
             <button className="primary wide" onClick={() => setStep(4)}>
@@ -3060,24 +3060,24 @@ function PointOfSale({ store, close }) {
                 <b>Tipo de entrega:</b> {serviceType === "Domicilio" ? "🛵 Entrega a domicilio" : "🏪 Recoger en restaurante"}
               </p>
               <p>
-                <b>¿Para cuÃ¡ndo?</b> {timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`}
+                <b>¿Para cuándo?</b> {timing === "Ahora" ? "Ahora" : `${scheduledDate} · ${scheduledTime}`}
               </p>
             </div>
-            <h3>MÃ©todo de pago</h3>
+            <h3>Método  de pago</h3>
             <div className="payment-options">
               <button
-                className={payment === "Transferencia / DepÃ³sito" ? "active" : ""}
+                className={payment === "Transferencia / Depósito" ? "active" : ""}
                 onClick={() => {
-                  setPayment("Transferencia / DepÃ³sito");
+                  setPayment("Transferencia / Depósito");
                   setCashConfirmed(false);
                 }}
               >
                 <CreditCard />
                 <span>
-                  <b>💳 Transferencia / DepÃ³sito</b>
-                  <small>Requiere validaciÃ³n</small>
+                  <b>💳 Transferencia / Depósito</b>
+                  <small>Requiere validación</small>
                 </span>
-                {payment === "Transferencia / DepÃ³sito" && <Check />}
+                {payment === "Transferencia / Depósito" && <Check />}
               </button>
               <button
                 className={payment === "Efectivo" ? "active" : ""}
@@ -3105,7 +3105,7 @@ function PointOfSale({ store, close }) {
                   <CreditCard />
                   <span>
                     <b>Tarjeta en caja</b>
-                    <small>Confirmar autorizaciÃ³n</small>
+                    <small>Confirmar autorización</small>
                   </span>
                   {payment === "Tarjeta en caja" && <Check />}
                 </button>
@@ -3135,7 +3135,7 @@ function PointOfSale({ store, close }) {
                   </button>
                 ))}
             </div>
-            {["Transferencia / DepÃ³sito", "Pago con QR", "CoDi", "DiMo"].includes(payment) && (
+            {["Transferencia / Depósito", "Pago con QR", "CoDi", "DiMo"].includes(payment) && (
               <div className="transfer-panel">
                 <div>
                   <small>Titular</small>
@@ -3159,7 +3159,7 @@ function PointOfSale({ store, close }) {
                     <b>{settings.cardNumber}</b>
                   </div>
                 )}
-                {settings.paymentQr && <img src={settings.paymentQr} alt="CÃ³digo QR de pago" />}
+                {settings.paymentQr && <img src={settings.paymentQr} alt="Código QR de pago" />}
                 <label className="full">
                   Comprobante (opcional)
                   <input type="file" accept="image/*,.pdf" onChange={(e) => setProof(e.target.files?.[0]?.name || "")} />
@@ -3168,7 +3168,7 @@ function PointOfSale({ store, close }) {
                 <div className="payment-validation">
                   <span className={`status ${transferValidated ? "entregado" : "nuevo"}`}>{transferValidated ? "Pagado" : "Pendiente de validar"}</span>
                   <label className="inline-check">
-                    <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que el negocio validÃ³ el pago
+                    <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que el negocio validó el pago
                   </label>
                 </div>
               </div>
@@ -3176,7 +3176,7 @@ function PointOfSale({ store, close }) {
             {payment === "Tarjeta en caja" && (
               <div className="cash-payment-panel">
                 <label className="inline-check">
-                  <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que la terminal autorizÃ³ el pago
+                  <input type="checkbox" checked={transferValidated} onChange={(e) => setTransferValidated(e.target.checked)} /> Confirmo que la terminal autorizó el pago
                 </label>
               </div>
             )}
@@ -3200,9 +3200,9 @@ function PointOfSale({ store, close }) {
                   <b>{money(cashChange)}</b>
                 </div>
                 <label className="inline-check">
-                  <input type="checkbox" checked={cashConfirmed} disabled={Number(cashTendered) < total} onChange={(e) => setCashConfirmed(e.target.checked)} /> Confirmo que recibÃ­ el efectivo
+                  <input type="checkbox" checked={cashConfirmed} disabled={Number(cashTendered) < total} onChange={(e) => setCashConfirmed(e.target.checked)} /> Confirmo que recibí el efectivo
                 </label>
-                {settings.cashDrawerEnabled && !settings.cashDrawerCompatible && <p className="drawer-warning">El cajÃ³n no se abrirÃ¡ fÃ­sicamente hasta marcarlo como compatible en ConfiguraciÃ³n POS.</p>}
+                {settings.cashDrawerEnabled && !settings.cashDrawerCompatible && <p className="drawer-warning">El cajón no se abrirá físicamente hasta marcarlo como compatible en Configuración POS.</p>}
               </div>
             )}
           </section>
@@ -3213,13 +3213,13 @@ function PointOfSale({ store, close }) {
                 <CircleDollarSign /> Se registra la venta como Pagada
               </li>
               <li>
-                <Wallet /> El cajÃ³n abre solo si el pago es efectivo
+                <Wallet /> El cajón abre solo si el pago es efectivo
               </li>
               <li>
-                <ChefHat /> Se envÃ­a la comanda de cocina
+                <ChefHat /> Se enví­a la comanda de cocina
               </li>
               <li>
-                <PackageCheck /> Se envÃ­a la comanda de barra
+                <PackageCheck /> Se envía la comanda de barra
               </li>
               <li>
                 <Printer /> Se imprime el ticket completo en caja
@@ -3241,7 +3241,7 @@ function PointOfSale({ store, close }) {
           </span>
           <h2>Venta #{result.id} confirmada</h2>
           <p>
-            El pedido quedÃ³ <b>Pagado</b> y fue enviado a las Ã¡reas correspondientes.
+            El pedido quedó <b>Pagado</b> y fue enviado a las áreas correspondientes.
           </p>
           <div className="print-results">
             <article>
@@ -3265,8 +3265,8 @@ function PointOfSale({ store, close }) {
             )}
             <article>
               <Wallet />
-              <b>CajÃ³n de dinero</b>
-              <small>{payment !== "Efectivo" ? "No aplica" : result.drawerOpened ? "Apertura solicitada" : "Sin apertura fÃ­sica"}</small>
+              <b>Cajón de dinero</b>
+              <small>{payment !== "Efectivo" ? "No aplica" : result.drawerOpened ? "Apertura solicitada" : "Sin apertura física"}</small>
             </article>
           </div>
           <button className="primary" onClick={close}>
@@ -3279,9 +3279,9 @@ function PointOfSale({ store, close }) {
 }
 
 function ProductionView({ store }) {
-  const [active, setActive] = useState("ProducciÃ³n");
+  const [active, setActive] = useState("Producción");
   return (
-    <DashboardShell active={active} setActive={setActive} moduleItems={[[active, CookingPot]]} title="Cocina / Comandas" subtitle="Solo productos que requieren preparaciÃ³n en cocina.">
+    <DashboardShell active={active} setActive={setActive} moduleItems={[[active, CookingPot]]} title="Cocina / Comandas" subtitle="Solo productos que requieren preparación en cocina.">
       <ProductionBoard store={store} />
     </DashboardShell>
   );
@@ -3303,7 +3303,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
   const routeLayer = useRef(null);
   const locationMarker = useRef(null);
   const [location, setLocation] = useState(null);
-  const [locationStatus, setLocationStatus] = useState("Solicitando ubicaciÃ³n del dispositivo…");
+  const [locationStatus, setLocationStatus] = useState("Solicitando ubicación del dispositivo…");
 
   useEffect(() => {
     if (!mapElement.current || mapInstance.current) return;
@@ -3325,7 +3325,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
         }),
       };
       setLocation(next);
-      setLocationStatus("UbicaciÃ³n en tiempo real activa");
+      setLocationStatus("Ubicación en tiempo real activa");
       const icon = L.divIcon({
         className: "leaflet-live-icon",
         html: "<span>●</span>",
@@ -3339,9 +3339,9 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
           zIndexOffset: 1000,
         })
           .addTo(map)
-          .bindTooltip("Tu ubicaciÃ³n actual");
+          .bindTooltip("Tu ubicación actual");
     });
-    map.on("locationerror", () => setLocationStatus("No fue posible obtener la ubicaciÃ³n. Revisa el permiso GPS."));
+    map.on("locationerror", () => setLocationStatus("No fue posible obtener la ubicación. Revisa el permiso GPS."));
     mapInstance.current = map;
     map.locate({
       watch: true,
@@ -3426,7 +3426,7 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
         </div>
         <div className="real-map-actions">
           <button onClick={centerLocation}>
-            <LocateFixed /> Mi ubicaciÃ³n
+            <LocateFixed /> Mi ubicación
           </button>
           <button onClick={centerDestination} disabled={!selectedOrder}>
             <MapPin /> Ver destino
@@ -3445,8 +3445,8 @@ function RealDeliveryMap({ orders, selectedOrder, onSelect }) {
 function DriverView({ store }) {
   const [tab, setTab] = useState("Por entregar");
   const [selectedStop, setSelectedStop] = useState(null);
-  const deliveryOrders = store.orders.filter((o) => isDeliveryOrder(o) && o.driver === "Roberto GÃ³mez");
-  const activeOrders = deliveryOrders.filter((o) => ["Recibido", "Confirmado", "En preparaciÃ³n", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
+  const deliveryOrders = store.orders.filter((o) => isDeliveryOrder(o) && o.driver === "Roberto Gómez");
+  const activeOrders = deliveryOrders.filter((o) => ["Recibido", "Confirmado", "En preparación", "Listo para enviar", "Asignado a repartidor", "En ruta"].includes(o.status));
   const history = deliveryOrders.filter((o) => o.status === "Entregado");
   const positions = [
     ["24%", "24%"],
@@ -3457,11 +3457,11 @@ function DriverView({ store }) {
   ];
   const selectedOrder = activeOrders.find((order) => order.id === selectedStop) || activeOrders.find((order) => order.status === "En ruta") || activeOrders[0];
   const advance = (order) => {
-    if (["Recibido", "Confirmado", "En preparaciÃ³n"].includes(order.status)) return;
+    if (["Recibido", "Confirmado", "En preparación"].includes(order.status)) return;
     const status = ["Listo para enviar", "Asignado a repartidor"].includes(order.status) ? "En ruta" : "Entregado";
     store.updateOrder(order.id, {
       status,
-      driver: "Roberto GÃ³mez",
+      driver: "Roberto Gómez",
       paid: status === "Entregado" ? true : order.paid,
     });
   };
@@ -3476,7 +3476,7 @@ function DriverView({ store }) {
         <div className="driver-score">
           <Star fill="currentColor" />
           <b>4.96</b>
-          <small>CalificaciÃ³n</small>
+          <small>Calificación</small>
         </div>
       </section>
       <nav className="driver-nav">
@@ -3500,7 +3500,7 @@ function DriverView({ store }) {
             </div>
             <div className="queue-counters">
               <span>
-                <i className="cooking" /> En preparaciÃ³n {activeOrders.filter((o) => ["Recibido", "Confirmado", "En preparaciÃ³n"].includes(o.status)).length}
+                <i className="cooking" /> En preparación {activeOrders.filter((o) => ["Recibido", "Confirmado", "En preparación"].includes(o.status)).length}
               </span>
               <span>
                 <i className="route" /> En ruta {activeOrders.filter((o) => o.status === "En ruta").length}
@@ -3561,7 +3561,7 @@ function DriverView({ store }) {
                     </button>
                   ) : (
                     <small className="delivery-waiting">
-                      <CookingPot /> Esperando preparaciÃ³n del pedido
+                      <CookingPot /> Esperando preparación del pedido
                     </small>
                   )}
                 </article>
@@ -3601,7 +3601,7 @@ function DriverView({ store }) {
             <b>{history.length} entregas</b>
           </div>
           {history.length === 0 ? (
-            <Empty text="TodavÃ­a no hay entregas completadas" />
+            <Empty text="Todavía no hay entregas completadas" />
           ) : (
             history.map((order) => (
               <article key={order.id}>
