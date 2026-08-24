@@ -10,7 +10,7 @@ function Test-LocalPort([int]$Port) {
   return $null -ne (Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue)
 }
 
-Write-Host 'Gastro Suite - inicio local' -ForegroundColor Cyan
+Write-Host 'Mi Menu Suite - inicio local' -ForegroundColor Cyan
 
 if (-not (Test-LocalPort 3306)) {
   if (-not (Test-Path $mysqlServer)) { throw 'No se encontró mysqld.exe en C:\laragon\bin\mysql.' }
